@@ -1,6 +1,6 @@
 import { App, normalizePath } from "obsidian";
 
-export async function listFiles(
+export async function listFilesTool(
 	app: App,
 	relativePath: string
 ): Promise<string> {

@@ -1,8 +1,9 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { App, Notice } from "obsidian";
-import { listFiles } from "./tools/list_files";
-import { readFileContent } from "./tools/read_file";
+import { listFilesTool } from "./tools/list_files";
+import { readFileTool } from "./tools/read_file";
+import { writeFileTool } from "./tools/write_files";
 
 export class MCPServer {
 	private server: FastMCP;
@@ -23,7 +24,7 @@ export class MCPServer {
 			this.server.start({
 				transportType: "sse",
 				sse: {
-					endpoint: "/mcp",
+					endpoint: "/sse",
 					port: this.port, // Use the port from settings
 				},
 			});
@@ -50,7 +51,7 @@ export class MCPServer {
 			}),
 			execute: async (input: { relative_path: string }) => {
 				try {
-					return await listFiles(this.app, input.relative_path);
+					return await listFilesTool(this.app, input.relative_path);
 				} catch (error) {
 					console.error("Error listing files:", error);
 					return JSON.stringify({
@@ -66,11 +67,13 @@ export class MCPServer {
 			parameters: z.object({
 				relative_path: z
 					.string()
-					.describe("Relative path to the file."),
+					.describe(
+						"Relative path to the file to the root of the Obsidian vault."
+					),
 			}),
 			execute: async (input: { relative_path: string }) => {
 				try {
-					return await readFileContent(this.app, input.relative_path);
+					return await readFileTool(this.app, input.relative_path);
 				} catch (error) {
 					console.error("Error reading file:", error);
 					return JSON.stringify({
@@ -79,9 +82,46 @@ export class MCPServer {
 				}
 			},
 		});
+
+		this.server.addTool({
+			name: "write_file",
+			description:
+				"Writes content to a file, but only if the file doesn't already exist.",
+			parameters: z.object({
+				relative_path: z
+					.string()
+					.describe(
+						"Relative path to the file to the root of the Obsidian vault."
+					),
+				content: z.string().describe("Content to write to the file."),
+			}),
+			execute: async (input: {
+				relative_path: string;
+				content: string;
+			}) => {
+				try {
+					return await writeFileTool(
+						this.app,
+						input.relative_path,
+						input.content
+					);
+				} catch (error) {
+					console.error("Error writing file:", error);
+					return JSON.stringify({
+						error: "Failed to write file. See console for details.",
+					});
+				}
+			},
+		});
 	}
 
 	stop() {
-		this.server.stop();
+		try {
+			this.server.stop();
+			console.log("MCP Server stopped successfully");
+		} catch (error) {
+			console.error("Error stopping MCP server:", error);
+			new Notice(`Error stopping MCP server. See console for details.`);
+		}
 	}
 }

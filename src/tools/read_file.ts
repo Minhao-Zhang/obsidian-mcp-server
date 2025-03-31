@@ -1,6 +1,6 @@
 import { App, normalizePath } from "obsidian";
 
-export async function readFileContent(
+export async function readFileTool(
 	app: App,
 	relativePath: string
 ): Promise<string> {
