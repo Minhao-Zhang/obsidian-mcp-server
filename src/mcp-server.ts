@@ -1,22 +1,40 @@
 import { FastMCP } from "fastmcp";
-import { z } from "zod";
+import { z } from "zod"; // Revert to standard import
 import { App, Notice } from "obsidian";
-import { listFilesTool } from "./tools/list_files";
-import { readFileTool } from "./tools/read_file";
-import { writeFileTool } from "./tools/write_files";
+import { listFilesTool } from "./tools/list_files.js"; // Add .js extension
+import { readFileTool } from "./tools/read_file.js"; // Add .js extension
+import { writeFileTool } from "./tools/write_files.js"; // Add .js extension
+import { getOramaDB, countEntries, saveDatabase } from "./orama-db.js"; // Add .js extension
+import { getTextEmbeddings } from "./utils/embeddings.js"; // Add .js extension
+import { insert } from "@orama/orama"; // Import Orama insert function
 
 export class MCPServer {
 	private server: FastMCP;
 	private port: number;
+	private oramaDB: Awaited<ReturnType<typeof getOramaDB>> | null = null;
+	private settings: any; // Store settings
 
-	constructor(private app: App, port: number) {
+	constructor(private app: App, port: number, settings: any) {
+		// Accept settings
 		this.port = port;
+		this.settings = settings; // Store settings
 		this.server = new FastMCP({
 			name: "Obsidian MCP Server",
 			version: "1.0.0",
 		});
 
 		this.setupTools();
+		this.initializeOramaDB();
+	}
+
+	async initializeOramaDB() {
+		try {
+			// Pass app and stored settings
+			this.oramaDB = await getOramaDB(this.app, this.settings);
+		} catch (error: any) {
+			console.error("Error initializing Orama database:", error);
+			new Notice(`Error initializing Orama database: ${error.message}`);
+		}
 	}
 
 	start() {
@@ -37,7 +55,92 @@ export class MCPServer {
 		}
 	}
 
-	private setupTools() {
+	// Method to trigger manual save
+	async triggerSaveDb() {
+		const pluginDataDir = `${this.app.vault.configDir}/plugins/Obsidian-MCP-Server`;
+		const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension
+		try {
+			await saveDatabase(this.app, filePath);
+			console.log("Manual save triggered successfully.");
+			// Optional: new Notice("Orama DB saved."); // Might be too noisy
+		} catch (error: any) {
+			console.error("Error triggering manual save:", error);
+			new Notice(`Error saving Orama DB: ${error.message || error}`);
+		}
+	}
+
+	async setupTools() {
+		this.server.addTool({
+			name: "add_text_embedding",
+			description:
+				"Calculates embedding for input text and adds it to the Orama database.",
+			parameters: z.object({
+				text: z.string().describe("The text to add and embed."),
+			}),
+			execute: async (input: { text: string }) => {
+				if (!this.oramaDB) {
+					return JSON.stringify({
+						error: "Orama database not initialized. Please initialize the database first using the 'init-orama-db' command.",
+					});
+				}
+				if (!this.settings) {
+					return JSON.stringify({
+						error: "Plugin settings not available.",
+					});
+				}
+				try {
+					const [embedding] = await getTextEmbeddings(
+						[input.text],
+						this.settings
+					);
+					if (!embedding) {
+						return JSON.stringify({
+							error: "Failed to generate embedding.",
+						});
+					}
+					const doc = {
+						text: input.text,
+						embedding: embedding,
+						metadata: JSON.stringify({ source: "user_input" }), // Store metadata as string
+					};
+					// Add 'as any' to bypass strict type check for insert
+					const id = await insert(this.oramaDB as any, doc);
+					// Trigger save after successful insert
+					await this.triggerSaveDb();
+					return JSON.stringify({
+						success: `Text added with ID: ${id}`,
+					});
+				} catch (error: any) {
+					console.error("Error adding text embedding:", error);
+					return JSON.stringify({
+						error: `Failed to add text embedding. See console for details: ${error.message}`,
+					});
+				}
+			},
+		});
+
+		this.server.addTool({
+			name: "count_entries",
+			description: "Counts the number of entries in the Orama database.",
+			parameters: z.object({}),
+			execute: async () => {
+				try {
+					if (!this.oramaDB) {
+						return JSON.stringify({
+							error: "Orama database not initialized. Please initialize the database first using the 'init-orama-db' command.",
+						});
+					}
+					const count = await countEntries(this.oramaDB);
+					return JSON.stringify({ count });
+				} catch (error: any) {
+					console.error("Error counting entries:", error);
+					return JSON.stringify({
+						error: `Failed to count entries. See console for details: ${error.message}`,
+					});
+				}
+			},
+		});
+
 		this.server.addTool({
 			name: "list_files",
 			description:

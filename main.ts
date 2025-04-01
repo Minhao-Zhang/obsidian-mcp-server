@@ -1,5 +1,6 @@
 import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
-import { MCPServer } from "./src/mcp-server";
+import { MCPServer } from "./src/mcp-server.js"; // Add .js extension
+import { stopOramaPersistence, saveDatabase } from "./src/orama-db.js"; // Add .js extension
 import OpenAI from "openai";
 
 interface ObsidianMCPServerPluginSettings {
@@ -49,6 +50,57 @@ export default class ObsidianMCPServer extends Plugin {
 			},
 		});
 
+		// Add command to initialize Orama DB
+		this.addCommand({
+			id: "init-orama-db",
+			name: "Initialize Orama DB",
+			callback: async () => {
+				if (!this.mcpServer) {
+					new Notice(
+						"MCP Server is not running. Please start the MCP Server first."
+					);
+					return;
+				}
+				try {
+					const plugin = (this.app as any).plugins.getPlugin(
+						"Obsidian-MCP-Server"
+					);
+					if (!plugin) {
+						new Notice("Obsidian-MCP-Server plugin not found");
+						return;
+					}
+					await (this.mcpServer as any).initializeOramaDB();
+					new Notice("Orama DB initialized");
+				} catch (error: any) {
+					new Notice(`Error initializing Orama DB: ${error.message}`);
+				}
+			},
+		});
+
+		// Add command to manually save Orama DB
+		this.addCommand({
+			id: "save-orama-db",
+			name: "Save Orama DB Manually",
+			callback: async () => {
+				if (!this.mcpServer) {
+					new Notice("MCP Server is not running.");
+					return;
+				}
+				// Need the file path again
+				const pluginDataDir = `${this.app.vault.configDir}/plugins/Obsidian-MCP-Server`;
+				const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension
+				try {
+					await saveDatabase(this.app, filePath);
+					new Notice("Orama DB saved manually.");
+				} catch (error: any) {
+					console.error("Error manually saving Orama DB:", error);
+					new Notice(
+						`Error manually saving Orama DB: ${error.message}`
+					);
+				}
+			},
+		});
+
 		// Add ribbon icon
 		const ribbonIconEl = this.addRibbonIcon(
 			"server",
@@ -66,6 +118,7 @@ export default class ObsidianMCPServer extends Plugin {
 	onunload() {
 		// Clean up if needed
 		this.stopMCPServer();
+		stopOramaPersistence(); // Stop the persistence interval
 	}
 
 	async loadSettings() {
@@ -81,7 +134,12 @@ export default class ObsidianMCPServer extends Plugin {
 	}
 
 	private startMCPServer() {
-		this.mcpServer = new MCPServer(this.app, this.settings.port);
+		// Pass settings to MCPServer constructor
+		this.mcpServer = new MCPServer(
+			this.app,
+			this.settings.port,
+			this.settings
+		);
 		this.mcpServer.start();
 		new Notice("MCP Server started");
 	}
