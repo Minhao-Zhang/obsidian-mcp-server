@@ -7,6 +7,7 @@ import { writeFileTool } from "./tools/write_files.js"; // Add .js extension
 import { getOramaDB, countEntries, saveDatabase } from "./orama-db.js"; // Add .js extension
 import { getTextEmbeddings } from "./utils/embeddings.js"; // Add .js extension
 import { insert } from "@orama/orama"; // Import Orama insert function
+import { vectorSearch } from "./tools/vector_search.js";
 
 export class MCPServer {
 	private server: FastMCP;
@@ -35,6 +36,7 @@ export class MCPServer {
 			console.error("Error initializing Orama database:", error);
 			new Notice(`Error initializing Orama database: ${error.message}`);
 		}
+		await this.triggerSaveDb();
 	}
 
 	start() {
@@ -70,6 +72,35 @@ export class MCPServer {
 	}
 
 	async setupTools() {
+		this.server.addTool({
+			name: "vector_search",
+			description: "Performs a vector search in the Orama database.",
+			parameters: z.object({
+				query: z.string().describe("The search query."),
+				count: z.number().describe("The number of results to return."),
+			}),
+			execute: async (input: { query: string; count: number }) => {
+				if (!this.oramaDB) {
+					return JSON.stringify({
+						error: "Orama database not initialized. Please initialize the database first.",
+					});
+				}
+				try {
+					const results = await vectorSearch(
+						this.oramaDB,
+						input,
+						this.settings
+					);
+					return JSON.stringify({ results });
+				} catch (error: any) {
+					console.error("Error performing vector search:", error);
+					return JSON.stringify({
+						error: `Failed to perform vector search. See console for details: ${error.message}`,
+					});
+				}
+			},
+		});
+
 		this.server.addTool({
 			name: "add_text_embedding",
 			description:

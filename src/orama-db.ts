@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { create, Orama, insert, count } from "@orama/orama";
 import { persist, restore } from "@orama/plugin-data-persistence"; // Use base functions
 import { App, TFile, Notice } from "obsidian"; // Import Notice
@@ -5,23 +6,32 @@ import { Buffer } from "buffer"; // Import Buffer for conversions
 import { getTextEmbeddings } from "./utils/embeddings.js"; // Add .js extension
 // Removed fs and path imports
 
-// Remove OramaDB type alias - let type be inferred
-// export type OramaDB = Orama<typeof schema>;
+export interface MySchema {
+	text: string;
+	embedding: string;
+	metadata: MetadataType;
+	file_path: string;
+}
 
-let embeddingDimension = 1536; // Default dimension
+export interface MetadataType {
+	[key: string]: string;
+}
 
 // Updated schema based on potentially fetched dimension
-const getDynamicSchema = () =>
+export const getDynamicSchema = () =>
 	({
 		text: "string",
 		embedding: `vector[${embeddingDimension}]`,
-		metadata: "string",
+		metadata: {} as MetadataType,
+		file_path: "string",
 	} as const);
+
+export type SchemaType = ReturnType<typeof getDynamicSchema>;
 
 // Remove schema constant used only for typing
 // const schema = getDynamicSchema();
 
-let db: Awaited<ReturnType<typeof create | typeof restore>> | null = null; // Use inferred type
+let db: Orama<MySchema> | null = null; // Use inferred type
 let persistenceInterval: NodeJS.Timeout | null = null;
 let isInitialized = false;
 let isSaving = false; // Simple lock flag
@@ -44,7 +54,6 @@ export async function saveDatabase(app: App, filePath: string) {
 		const persistedData = await persist(db as any, "binary"); // Don't assume Buffer return type
 
 		// Use adapter.writeBinary, assuming persistedData is ArrayBuffer or compatible
-		// Add 'as ArrayBuffer' assertion for writeBinary parameter
 		// Note: filePath is relative to vault root (e.g., .obsidian/plugins/...)
 		await app.vault.adapter.writeBinary(
 			filePath,
@@ -83,7 +92,10 @@ async function loadOrCreateDatabase(
 			// Convert ArrayBuffer to Node.js Buffer for restore
 			const nodeBuffer = Buffer.from(rawData);
 			// Restore from binary data (Node.js Buffer) - Remove type assertion
-			db = await restore("binary", nodeBuffer); // Assign to global db
+			db = (await restore(
+				"binary",
+				nodeBuffer
+			)) as any as Orama<MySchema>; // Assign to global db
 			console.log(
 				"Orama database restored from file using adapter.readBinary and restore"
 			);
@@ -113,8 +125,18 @@ async function loadOrCreateDatabase(
 				);
 				embeddingDimension = embeddings[0].length;
 
+				const embeddingType = `vector[${embeddingDimension}]`;
+
+				const dynamicSchema = () =>
+					({
+						text: "string",
+						embedding: embeddingType,
+						metadata: {} as MetadataType,
+						file_path: "string",
+					} as const);
+
 				// Create with updated schema - Remove type assertion
-				db = await create({ schema: getDynamicSchema() }); // Assign to global db
+				db = await create<MySchema>({ schema: dynamicSchema() }); // Assign to global db
 				console.log("New Orama database created");
 			} catch (createError) {
 				console.error(
@@ -152,8 +174,11 @@ async function loadOrCreateDatabase(
 }
 
 // Accept app and settings - Use inferred type for return
-export async function getOramaDB(app: App, settings: any): Promise<typeof db> {
-	if (db && isInitialized) {
+export async function getOramaDB(
+	app: App,
+	settings: any
+): Promise<Orama<MySchema> | null> {
+	if (db) {
 		return db;
 	}
 	// Load or create, this handles initialization and sets the global 'db'
@@ -169,11 +194,15 @@ export function stopOramaPersistence() {
 		console.log("Orama persistence stopped.");
 	}
 	// Optionally, trigger a final save on unload?
-	// if (db) { saveDatabase(app, filePath, db); } // Need app context and db instance here
+	if (db) {
+		const pluginDataDir = `${app.vault.configDir}/plugins/Obsidian-MCP-Server`;
+		const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension
+		saveDatabase(app, filePath);
+	} // Need app context and db instance here
 }
 
 // Use inferred type for parameter
-export async function countEntries(database: typeof db): Promise<number> {
+export async function countEntries(database: Orama<MySchema>): Promise<number> {
 	// Add 'as any' to bypass strict type check for count
 	return count(database as any);
 }

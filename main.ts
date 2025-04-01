@@ -1,23 +1,14 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
-import { MCPServer } from "./src/mcp-server.js"; // Add .js extension
-import { stopOramaPersistence, saveDatabase } from "./src/orama-db.js"; // Add .js extension
-import OpenAI from "openai";
-
-interface ObsidianMCPServerPluginSettings {
-	port: number;
-	startOnStartup: boolean;
-	modelProviderUrl: string;
-	embeddingModel: string;
-	apiKey: string;
-}
-
-const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
-	port: 8080,
-	startOnStartup: false,
-	modelProviderUrl: "https://api.openai.com/v1",
-	embeddingModel: "text-embedding-ada-002",
-	apiKey: "sk_your_api_key",
-};
+import { Notice, Plugin } from "obsidian";
+import { MCPServer } from "./src/mcp-server.js";
+import { stopOramaPersistence, saveDatabase } from "./src/orama-db.js";
+import { initializeOramaDbCommand } from "./src/commands/initializeOramaDbCommand.js";
+import { saveOramaDbCommand } from "./src/commands/saveOramaDbCommand.js";
+import { indexVaultCommand } from "./src/commands/indexVaultCommand";
+import {
+	ObsidianMCPServerPluginSettings,
+	DEFAULT_SETTINGS,
+	ObsidianMCPServerSettingTab,
+} from "./src/settings";
 
 export default class ObsidianMCPServer extends Plugin {
 	settings: ObsidianMCPServerPluginSettings;
@@ -54,51 +45,21 @@ export default class ObsidianMCPServer extends Plugin {
 		this.addCommand({
 			id: "init-orama-db",
 			name: "Initialize Orama DB",
-			callback: async () => {
-				if (!this.mcpServer) {
-					new Notice(
-						"MCP Server is not running. Please start the MCP Server first."
-					);
-					return;
-				}
-				try {
-					const plugin = (this.app as any).plugins.getPlugin(
-						"Obsidian-MCP-Server"
-					);
-					if (!plugin) {
-						new Notice("Obsidian-MCP-Server plugin not found");
-						return;
-					}
-					await (this.mcpServer as any).initializeOramaDB();
-					new Notice("Orama DB initialized");
-				} catch (error: any) {
-					new Notice(`Error initializing Orama DB: ${error.message}`);
-				}
-			},
+			callback: () => initializeOramaDbCommand(this),
 		});
 
 		// Add command to manually save Orama DB
 		this.addCommand({
 			id: "save-orama-db",
 			name: "Save Orama DB Manually",
-			callback: async () => {
-				if (!this.mcpServer) {
-					new Notice("MCP Server is not running.");
-					return;
-				}
-				// Need the file path again
-				const pluginDataDir = `${this.app.vault.configDir}/plugins/Obsidian-MCP-Server`;
-				const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension
-				try {
-					await saveDatabase(this.app, filePath);
-					new Notice("Orama DB saved manually.");
-				} catch (error: any) {
-					console.error("Error manually saving Orama DB:", error);
-					new Notice(
-						`Error manually saving Orama DB: ${error.message}`
-					);
-				}
-			},
+			callback: () => saveOramaDbCommand(this),
+		});
+
+		// Add command to index all files
+		this.addCommand({
+			id: "index-vault",
+			name: "Index All Files.",
+			callback: () => indexVaultCommand(this),
 		});
 
 		// Add ribbon icon
@@ -115,10 +76,16 @@ export default class ObsidianMCPServer extends Plugin {
 		this.addSettingTab(new ObsidianMCPServerSettingTab(this.app, this));
 	}
 
-	onunload() {
+	async onunload() {
 		// Clean up if needed
 		this.stopMCPServer();
-		stopOramaPersistence(); // Stop the persistence interval
+		stopOramaPersistence();
+
+		// Trigger a final save on unload
+		const pluginDataDir = `${this.app.vault.configDir}/plugins/Obsidian-MCP-Server`;
+		const filePath = `${pluginDataDir}/orama.msp`;
+		await saveDatabase(this.app, filePath);
+		console.log("Orama database saved on unload.");
 	}
 
 	async loadSettings() {
@@ -134,7 +101,6 @@ export default class ObsidianMCPServer extends Plugin {
 	}
 
 	private startMCPServer() {
-		// Pass settings to MCPServer constructor
 		this.mcpServer = new MCPServer(
 			this.app,
 			this.settings.port,
@@ -149,156 +115,6 @@ export default class ObsidianMCPServer extends Plugin {
 			this.mcpServer.stop();
 			this.mcpServer = undefined;
 			new Notice("MCP Server stopped");
-		}
-	}
-}
-
-class ObsidianMCPServerSettingTab extends PluginSettingTab {
-	plugin: ObsidianMCPServer;
-
-	constructor(app: App, plugin: ObsidianMCPServer) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl).setName("General").setHeading();
-
-		new Setting(containerEl)
-			.setName("Port")
-			.setDesc("The port to use for the MCP server.")
-			.addText((text) =>
-				text
-					.setPlaceholder("9090")
-					.setValue(this.plugin.settings.port.toString())
-					.onChange(async (value) => {
-						const port = parseInt(value);
-						if (!isNaN(port) && port > 0 && port < 65536) {
-							this.plugin.settings.port = port;
-							await this.plugin.saveSettings();
-						} else {
-							new Notice(
-								"Invalid port number. Please enter a number between 1 and 65535."
-							);
-						}
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Auto Start MCP")
-			.setDesc("Start the MCP server when Obsidian starts.")
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.startOnStartup)
-					.onChange(async (value) => {
-						this.plugin.settings.startOnStartup = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("MCP Endpoint")
-			.setDesc(`http://localhost:${this.plugin.settings.port}/sse`)
-			.addButton((button) => {
-				button.setButtonText("Copy").onClick(() => {
-					navigator.clipboard.writeText(
-						`http://localhost:${this.plugin.settings.port}/sse`
-					);
-					new Notice("API Endpoint copied to clipboard");
-				});
-			});
-
-		new Setting(containerEl).setName("Embedding Model").setHeading();
-
-		new Setting(containerEl)
-			.setName("Model Provider URL (OpenAI Compatible)")
-			.setDesc("The base URL for the OpenAI compatible API endpoint.")
-			.addText((text) =>
-				text
-					.setPlaceholder("https://api.openai.com/v1")
-					.setValue(this.plugin.settings.modelProviderUrl)
-					.onChange(async (value) => {
-						this.plugin.settings.modelProviderUrl = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Embedding Model")
-			.setDesc("The embedding model to use.")
-			.addText((text) =>
-				text
-					.setPlaceholder("text-embedding-ada-002")
-					.setValue(this.plugin.settings.embeddingModel)
-					.onChange(async (value) => {
-						this.plugin.settings.embeddingModel = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("API Key")
-			.setDesc(
-				"The API key to use for the OpenAI compatible API endpoint."
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("sk_your_api_key")
-					.setValue(this.plugin.settings.apiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.apiKey = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl).addButton((button) => {
-			button.setButtonText("Verify Connection").onClick(async () => {
-				try {
-					const isValid = await this.verifyConnection();
-					if (isValid) {
-						new Notice("Connection verified successfully!");
-					} else {
-						new Notice("Connection verification failed.");
-					}
-				} catch (error: any) {
-					new Notice(
-						`An error occurred during connection verification: ${error.message}`
-					);
-				}
-			});
-		});
-	}
-
-	async verifyConnection(): Promise<boolean> {
-		const apiKey = this.plugin.settings.apiKey;
-		const modelProviderUrl = this.plugin.settings.modelProviderUrl;
-		const embeddingModel = this.plugin.settings.embeddingModel;
-
-		if (!apiKey) {
-			new Notice("Please provide an API key.");
-			return false;
-		}
-
-		try {
-			const openai = new OpenAI({
-				apiKey: apiKey,
-				baseURL: modelProviderUrl,
-				dangerouslyAllowBrowser: true, // Required to use OpenAI SDK in a browser environment
-			});
-
-			await openai.embeddings.create({
-				input: "This is a test.",
-				model: embeddingModel,
-			});
-
-			return true;
-		} catch (error: any) {
-			new Notice(`Connection verification failed: ${error.message}`);
-			return false;
 		}
 	}
 }
