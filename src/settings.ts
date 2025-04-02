@@ -17,6 +17,9 @@ export interface ObsidianMCPServerPluginSettings {
 	embeddingModel: string;
 	apiKey: string;
 	ignorePatterns: string;
+	chunkSize: number;
+	chunkOverlap: number;
+	separators: string[];
 }
 
 export const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
@@ -32,6 +35,9 @@ export const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
 *.gif
 *.svg
 *.webp`,
+	chunkSize: 1000,
+	chunkOverlap: 200,
+	separators: ["\n\n", "\n", ".", "?", "!", " ", ""],
 };
 
 export class ObsidianMCPServerSettingTab extends PluginSettingTab {
@@ -234,6 +240,77 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 				"MCP Server not running or Vector DB not initialized."
 			);
 		}
+
+		new Setting(this.containerEl).setName("Chunking").setHeading();
+
+		new Setting(this.containerEl)
+			.setName("Chunk Size")
+			.setDesc("The maximum size of each chunk.")
+			.addText((text) =>
+				text
+					.setPlaceholder("1000")
+					.setValue(this.plugin.settings.chunkSize.toString())
+					.onChange(async (value) => {
+						const chunkSize = parseInt(value);
+						if (!isNaN(chunkSize) && chunkSize > 0) {
+							this.plugin.settings.chunkSize = chunkSize;
+							await this.plugin.saveSettings();
+						} else {
+							new Notice(
+								"Invalid chunk size. Please enter a positive number."
+							);
+						}
+					})
+			);
+
+		new Setting(this.containerEl)
+			.setName("Chunk Overlap")
+			.setDesc("The amount of overlap between chunks.")
+			.addText((text) =>
+				text
+					.setPlaceholder("200")
+					.setValue(this.plugin.settings.chunkOverlap.toString())
+					.onChange(async (value) => {
+						const chunkOverlap = parseInt(value);
+						if (!isNaN(chunkOverlap) && chunkOverlap >= 0) {
+							this.plugin.settings.chunkOverlap = chunkOverlap;
+							await this.plugin.saveSettings();
+						} else {
+							new Notice(
+								"Invalid chunk overlap. Please enter a non-negative number."
+							);
+						}
+					})
+			);
+
+		new Setting(this.containerEl)
+			.setName("Separators")
+			.setDesc("The separators to use when splitting text into chunks.")
+			.addTextArea((text) =>
+				text
+					.setPlaceholder('["\n\n", "\n", ".", "?", "!", " ", ""]')
+					.setValue(JSON.stringify(this.plugin.settings.separators))
+					.onChange(async (value) => {
+						try {
+							const separators = JSON.parse(value);
+							if (
+								Array.isArray(separators) &&
+								separators.every((s) => typeof s === "string")
+							) {
+								this.plugin.settings.separators = separators;
+								await this.plugin.saveSettings();
+							} else {
+								new Notice(
+									"Invalid separators. Please enter a valid JSON array of strings."
+								);
+							}
+						} catch (e) {
+							new Notice(
+								"Invalid separators. Please enter a valid JSON array."
+							);
+						}
+					})
+			);
 	}
 
 	async verifyConnection(): Promise<boolean> {

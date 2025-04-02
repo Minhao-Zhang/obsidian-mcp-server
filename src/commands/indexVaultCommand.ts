@@ -25,9 +25,12 @@ export async function indexVaultCommand(
 	const files: TFile[] = app.vault.getFiles();
 	let indexedCount = 0;
 
+	console.log(settings.chunkSize, settings.chunkOverlap, settings.separators);
+
 	const splitter = new RecursiveCharacterTextSplitter({
-		chunkSize: 1000,
-		chunkOverlap: 200,
+		chunkSize: settings.chunkSize,
+		chunkOverlap: settings.chunkOverlap,
+		separators: settings.separators,
 	});
 
 	try {
@@ -65,9 +68,6 @@ export async function indexVaultCommand(
 						const embedding = embeddings[0];
 
 						const metadata = {
-							filePath: file.path,
-							fileName: file.name,
-							fileExtension: file.extension,
 							// Add more metadata as needed
 						};
 

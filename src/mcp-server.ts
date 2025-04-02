@@ -77,9 +77,22 @@ export class MCPServer {
 			description: "Performs a vector search in the Orama database.",
 			parameters: z.object({
 				query: z.string().describe("The search query."),
-				count: z.number().describe("The number of results to return."),
+				count: z
+					.number()
+					.describe("The number of results to return. Defaults to 5.")
+					.default(5),
+				similarity: z
+					.number()
+					.describe(
+						"The minimum similarity score for a result to be returned. Defaults to 0.8"
+					)
+					.optional(),
 			}),
-			execute: async (input: { query: string; count: number }) => {
+			execute: async (input: {
+				query: string;
+				count: number;
+				similarity?: number;
+			}) => {
 				if (!this.oramaDB) {
 					return JSON.stringify({
 						error: "Orama database not initialized. Please initialize the database first.",
