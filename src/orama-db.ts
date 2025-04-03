@@ -1,208 +1,223 @@
 // @ts-nocheck
 import { create, Orama, insert, count } from "@orama/orama";
-import { persist, restore } from "@orama/plugin-data-persistence"; // Use base functions
-import { App, TFile, Notice } from "obsidian"; // Import Notice
-import { Buffer } from "buffer"; // Import Buffer for conversions
-import { getTextEmbeddings } from "./utils/embeddings.js"; // Add .js extension
-// Removed fs and path imports
+import { persist, restore } from "@orama/plugin-data-persistence";
+import { App, TFile, Notice } from "obsidian";
+import { Buffer } from "buffer";
+import { getTextEmbeddings } from "./utils/embeddings.js";
 
 export interface MySchema {
 	text: string;
 	embedding: string;
-	metadata: MetadataType;
+	metadata: string; // Changed from MetadataType to string
 	file_path: string;
 }
 
-export interface MetadataType {
-	[key: string]: string;
-}
+// MetadataType interface is no longer needed for the schema definition
+// export interface MetadataType {
+// 	[key: string]: any;
+// }
 
-// Updated schema based on potentially fetched dimension
-export const getDynamicSchema = () =>
-	({
+// Global variable for dimension, fetched once
+let embeddingDimension: number | null = null;
+
+// Schema definition function - used internally
+const getInternalDynamicSchema = () => {
+	if (embeddingDimension === null) {
+		throw new Error("Embedding dimension has not been fetched yet.");
+	}
+	return {
 		text: "string",
-		embedding: `vector[${embeddingDimension}]`,
-		metadata: {} as MetadataType,
+		embedding: `vector[${embeddingDimension}]` as const,
+		metadata: "string", // Define metadata as string in the schema
 		file_path: "string",
-	} as const);
+	} as const;
+};
 
-export type SchemaType = ReturnType<typeof getDynamicSchema>;
-
-// Remove schema constant used only for typing
-// const schema = getDynamicSchema();
-
-let db: Orama<MySchema> | null = null; // Use inferred type
+let db: Orama<MySchema> | null = null; // Global singleton instance
 let persistenceInterval: NodeJS.Timeout | null = null;
-let isInitialized = false;
 let isSaving = false; // Simple lock flag
 
-// Export saveDatabase function
+// --- Persistence Functions ---
+
+export function stopOramaPersistence() {
+	if (persistenceInterval) {
+		clearInterval(persistenceInterval);
+		persistenceInterval = null;
+		console.log("Orama persistence interval stopped.");
+	}
+}
+
 export async function saveDatabase(app: App, filePath: string) {
 	if (isSaving) {
 		console.log("Save already in progress, skipping.");
 		return;
 	}
 	if (!db) {
-		console.error("Attempted to save DB, but it's null.");
+		console.warn(
+			"Attempted to save global DB, but it's null. Skipping save."
+		);
 		return;
 	}
 
-	isSaving = true; // Acquire lock
+	isSaving = true;
+	console.log("Attempting to save global Orama database...");
 	try {
-		// Persist to binary format
-		// Add 'as any' to bypass strict type check for persist argument
-		const persistedData = await persist(db as any, "binary"); // Don't assume Buffer return type
-
-		// Use adapter.writeBinary, assuming persistedData is ArrayBuffer or compatible
-		// Note: filePath is relative to vault root (e.g., .obsidian/plugins/...)
+		const persistedData = await persist(db, "binary");
 		await app.vault.adapter.writeBinary(
 			filePath,
 			persistedData as ArrayBuffer
 		);
-		// console.log("Orama database file saved using adapter.writeBinary.");
+		console.log("Global Orama database saved successfully to:", filePath);
 	} catch (error) {
-		console.error(
-			"Error persisting Orama database with adapter.writeBinary:",
-			error
-		);
-		// Add Notice for visibility
-		new Notice(`Error persisting Orama DB: ${error.message || error}`);
+		console.error("Error persisting global Orama database:", error);
+		new Notice(`Error saving Orama DB: ${error.message || error}`);
 	} finally {
-		isSaving = false; // Release lock
+		isSaving = false;
 	}
 }
 
-// Renamed for clarity, accepts app and settings - Use inferred type for return
+// --- Database Initialization and Access ---
+
 async function loadOrCreateDatabase(
 	app: App,
 	settings: any
-): Promise<typeof db> {
+): Promise<Orama<MySchema>> {
 	const pluginDataDir = `${app.vault.configDir}/plugins/Obsidian-MCP-Server`;
-	const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension for binary
+	const filePath = `${pluginDataDir}/orama.msp`;
 	let needsInitialSave = false;
+	let loadedDb: Orama<MySchema> | null = null;
 
-	// Check if file exists using adapter.exists
-	const fileExists = await app.vault.adapter.exists(filePath);
-
-	// Try restoring first if file exists
-	if (fileExists) {
+	if (embeddingDimension === null) {
+		console.log("Fetching embedding dimension in loadOrCreateDatabase...");
 		try {
-			// Read binary data using adapter (returns ArrayBuffer)
-			const rawData = await app.vault.adapter.readBinary(filePath);
-			// Convert ArrayBuffer to Node.js Buffer for restore
-			const nodeBuffer = Buffer.from(rawData);
-			// Restore from binary data (Node.js Buffer) - Remove type assertion
-			db = (await restore(
-				"binary",
-				nodeBuffer
-			)) as any as Orama<MySchema>; // Assign to global db
-			console.log(
-				"Orama database restored from file using adapter.readBinary and restore"
+			const testEmbeddings = await getTextEmbeddings(["test"], settings);
+			if (testEmbeddings && testEmbeddings[0]) {
+				embeddingDimension = testEmbeddings[0].length;
+				console.log(
+					`Embedding dimension set to: ${embeddingDimension}`
+				);
+			} else {
+				throw new Error("Failed to get test embeddings.");
+			}
+		} catch (embedError) {
+			console.error(
+				"Critical error fetching embedding dimension:",
+				embedError
 			);
+			throw new Error(
+				`Failed to fetch embedding dimension: ${embedError.message}`
+			);
+		}
+	}
+
+	const fileExists = await app.vault.adapter.exists(filePath);
+	if (fileExists) {
+		console.log("Database file exists, attempting to restore...");
+		try {
+			const rawData = await app.vault.adapter.readBinary(filePath);
+			const nodeBuffer = Buffer.from(rawData);
+			// Restore function might need the schema type hint if it changed
+			loadedDb = (await restore("binary", nodeBuffer)) as Orama<MySchema>;
+			console.log("Orama database restored successfully from file.");
 		} catch (restoreError) {
 			console.error(
-				"Error restoring Orama database using adapter.readBinary/restore, will create a new one:",
+				"Error restoring Orama database, will create a new one:",
 				restoreError
 			);
-			// fileExists is already known, just ensure db is null to trigger creation
-			db = null;
+			loadedDb = null;
+		}
+	} else {
+		console.log("Database file does not exist.");
+	}
+
+	if (!loadedDb) {
+		console.log("Creating a new Orama database instance...");
+		needsInitialSave = true;
+		try {
+			const schemaDefinition = getInternalDynamicSchema(); // Uses string for metadata
+			loadedDb = await create<MySchema>({ schema: schemaDefinition });
+			console.log("New Orama database created successfully.");
+		} catch (createError) {
+			console.error("Error creating new Orama database:", createError);
+			throw new Error(
+				`Failed to create new Orama database: ${createError.message}`
+			);
 		}
 	}
 
-	// If restore failed or file didn't exist, create new
-	if (!db || !fileExists) {
-		// This was the correct condition
-		// If restore failed or file didn't exist, create new
-		if (!db) {
-			// Check specifically if db is null (restore failed or file didn't exist)
-			console.log("Creating a new Orama database");
-			needsInitialSave = true;
-			try {
-				// Fetch embedding dimension *before* creating
-				const embeddings = await getTextEmbeddings(
-					["This is a test."],
-					settings
-				);
-				embeddingDimension = embeddings[0].length;
+	db = loadedDb; // Assign to global instance
 
-				const embeddingType = `vector[${embeddingDimension}]`;
-
-				const dynamicSchema = () =>
-					({
-						text: "string",
-						embedding: embeddingType,
-						metadata: {} as MetadataType,
-						file_path: "string",
-					} as const);
-
-				// Create with updated schema - Remove type assertion
-				db = await create<MySchema>({ schema: dynamicSchema() }); // Assign to global db
-				console.log("New Orama database created");
-			} catch (createError) {
-				console.error(
-					"Error creating new Orama database:",
-					createError
-				);
-				throw new Error(
-					`Failed to create new Orama database: ${createError}`
-				);
-			}
-		} // Close the inner if (!db) block here
-	} // This closes the outer if (!db || !fileExists) block
-
-	// Start persistence interval only once
 	if (!persistenceInterval) {
-		// Perform initial save immediately if needed
+		console.log("Setting up persistence interval.");
 		if (needsInitialSave && db) {
-			// Ensure db is created before saving
-			await saveDatabase(app, filePath); // Save the newly created global db
+			console.log(
+				"Performing initial save for newly created database..."
+			);
+			await saveDatabase(app, filePath);
 		}
 
-		// Set up interval for subsequent saves
 		persistenceInterval = setInterval(
-			() => saveDatabase(app, filePath), // Use the relative path for consistency
-			5 * 60 * 1000
-		); // 5 minutes
+			() => saveDatabase(app, filePath),
+			(settings.saveIntervalMinutes || 5) * 60 * 1000
+		);
+		console.log(
+			`Persistence interval started (${
+				settings.saveIntervalMinutes || 5
+			} minutes).`
+		);
 	}
 
-	isInitialized = true;
-	// This check ensures db is assigned. If creation failed, an error was thrown.
 	if (!db) {
 		throw new Error("Database instance could not be initialized.");
 	}
-	return db; // Return the global instance
+	return db;
 }
 
-// Accept app and settings - Use inferred type for return
 export async function getOramaDB(
 	app: App,
-	settings: any
+	settings: any,
+	forceReload: boolean = false
 ): Promise<Orama<MySchema> | null> {
-	if (db) {
-		return db;
+	if (forceReload && db) {
+		console.log(
+			"Force reload requested. Closing current DB instance and stopping persistence."
+		);
+		stopOramaPersistence();
+		db = null;
 	}
-	// Load or create, this handles initialization and sets the global 'db'
-	// This will also start the interval if not already started
-	return await loadOrCreateDatabase(app, settings);
+
+	if (!db) {
+		console.log(
+			"No active DB instance or force reload. Loading or creating..."
+		);
+		try {
+			db = await loadOrCreateDatabase(app, settings);
+		} catch (error) {
+			console.error("Failed to load or create database:", error);
+			new Notice(`Failed to initialize Orama DB: ${error.message}`);
+			db = null;
+		}
+	}
+	return db;
 }
 
-// Function to stop the persistence interval (e.g., on plugin unload)
-export function stopOramaPersistence() {
-	if (persistenceInterval) {
-		clearInterval(persistenceInterval);
-		persistenceInterval = null;
-		console.log("Orama persistence stopped.");
-	}
-	// Optionally, trigger a final save on unload?
+export async function closeDatabase() {
+	console.log("closeDatabase called.");
+	stopOramaPersistence();
 	if (db) {
-		const pluginDataDir = `${app.vault.configDir}/plugins/Obsidian-MCP-Server`;
-		const filePath = `${pluginDataDir}/orama.msp`; // Use .msp extension
-		saveDatabase(app, filePath);
-	} // Need app context and db instance here
+		db = null;
+		console.log("Global Orama database instance closed (set to null).");
+	} else {
+		console.log("No active global Orama database instance to close.");
+	}
 }
 
-// Use inferred type for parameter
 export async function countEntries(database: Orama<MySchema>): Promise<number> {
-	// Add 'as any' to bypass strict type check for count
-	return count(database as any);
+	if (!database) return 0;
+	try {
+		return await count(database);
+	} catch (error) {
+		console.error("Error counting entries:", error);
+		return 0;
+	}
 }

@@ -29,16 +29,12 @@ export async function vectorSearch(
 ): Promise<VectorSearchResult[]> {
 	const { query, count } = input;
 
-	console.log("Settings:", settings);
-
 	if (!settings.apiKey) {
 		console.error("API key is not defined in settings.");
 		return [];
 	}
 
 	const embeddings = await getTextEmbeddings([query], settings);
-
-	console.log("Embeddings:", embeddings);
 
 	const results = await search(db, {
 		term: query,
@@ -50,8 +46,6 @@ export async function vectorSearch(
 		similarity: input.similarity ?? 0.8,
 		limit: count,
 	});
-
-	console.log("Results:", results);
 
 	return results.hits.map(
 		(hit: Hit) =>

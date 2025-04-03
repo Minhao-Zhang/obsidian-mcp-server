@@ -34,7 +34,8 @@ export const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
 *.jpeg
 *.gif
 *.svg
-*.webp`,
+*.webp
+*.pdf`,
 	chunkSize: 1000,
 	chunkOverlap: 200,
 	separators: ["\n\n", "\n", ".", "?", "!", " ", ""],
@@ -42,10 +43,12 @@ export const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
 
 export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 	plugin: ObsidianMCPServer;
+	indexVaultCommand: any;
 
-	constructor(app: App, plugin: ObsidianMCPServer) {
+	constructor(app: App, plugin: ObsidianMCPServer, indexVaultCommand: any) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.indexVaultCommand = indexVaultCommand;
 	}
 
 	display(): void {
@@ -183,7 +186,8 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 *.jpeg
 *.gif
 *.svg
-*.webp`
+*.webp
+*.pdf`
 			)
 			.setValue(this.plugin.settings.ignorePatterns);
 		textArea.inputEl.style.minHeight = "200px";
@@ -311,6 +315,28 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 						}
 					})
 			);
+
+		new Setting(containerEl)
+			.setName("Dangerous Zone")
+			.setHeading()
+			.setClass("dangerous-zone");
+
+		new Setting(containerEl)
+			.setName("Index Vault")
+			.setDesc(
+				"Rebuild the vector store by re-indexing all files in the vault. WARNING: This operation is very time consuming and expensive."
+			)
+			.addButton((button) => {
+				button.setButtonText("Re-index Vault").onClick(async () => {
+					new Notice("Re-indexing vault...");
+					try {
+						await this.indexVaultCommand(this.plugin);
+						new Notice("Vault re-indexed successfully.");
+					} catch (error: any) {
+						new Notice(`Error re-indexing vault: ${error.message}`);
+					}
+				});
+			});
 	}
 
 	async verifyConnection(): Promise<boolean> {
