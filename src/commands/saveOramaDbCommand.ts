@@ -1,4 +1,4 @@
-import { App, Notice } from "obsidian";
+import { Notice } from "obsidian";
 import ObsidianMCPServer from "../../main"; // Adjust path as needed
 import { MCPServer } from "../mcp-server"; // Import MCPServer type
 

@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import { Orama } from "@orama/orama";
-import { getOramaDB, countEntries, saveDatabase } from "../orama-db";
+import { getOramaDB, countEntries } from "../orama-db";
 import { Notice } from "obsidian";
 
 export interface OramaOperations {
@@ -16,15 +16,10 @@ export const oramaOperations: OramaOperations = {
 		app: App,
 		settings: any
 	): Promise<Orama<any> | null> {
-		console.log("OramaOperations: Initializing OramaDB connection...");
 		try {
 			const oramaDB = await getOramaDB(app, settings);
 			if (oramaDB) {
-				console.log("OramaOperations: OramaDB loaded successfully.");
 				const count = await countEntries(oramaDB);
-				console.log(
-					`OramaOperations: Initial DB entry count: ${count}`
-				);
 				return oramaDB;
 			} else {
 				console.error(
@@ -47,14 +42,10 @@ export const oramaOperations: OramaOperations = {
 		app: App,
 		settings: any
 	): Promise<Orama<any> | null> {
-		console.log("OramaOperations: Reloading OramaDB instance...");
 		try {
 			const oramaDB = await getOramaDB(app, settings, true); // forceReload = true
 			if (oramaDB) {
 				const count = await countEntries(oramaDB);
-				console.log(
-					`OramaOperations: OramaDB reloaded successfully. New count: ${count}`
-				);
 				new Notice("Database reloaded successfully.");
 				return oramaDB;
 			} else {

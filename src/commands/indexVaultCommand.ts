@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { App, Notice, TFile, getFrontMatterInfo } from "obsidian";
-import * as fs from "fs";
+import { Notice, TFile, getFrontMatterInfo, FrontMatterCache } from "obsidian";
 import ObsidianMCPServer from "../../main";
 import { MCPServer } from "../mcp-server"; // Import MCPServer type
 import { createRagignoreMatcher } from "../../src/utils/ragignore";
@@ -25,7 +24,6 @@ export async function indexVaultCommand(
 	const app = plugin.app;
 	const settings = plugin.settings;
 	new Notice("Starting vault indexing (clearing previous index)...");
-	console.log("Starting vault indexing...");
 
 	// Check if server instance is provided (needed for reload notification)
 	if (!serverInstance) {
@@ -54,26 +52,16 @@ export async function indexVaultCommand(
 		const pluginDataDir = `${app.vault.configDir}/plugins/Obsidian-MCP-Server`;
 		const filePath = `${pluginDataDir}/orama.msp`;
 
-		// Create a persistent notice for progress
-		const totalChunks = allChunks.length;
-		progressNotice = new Notice(
-			`Starting indexing 0% (0/${totalChunks} chunks)...`,
-			0
-		); // 0 timeout = persistent
-
 		// 1. Close any globally held DB instance
 		await closeDatabase();
-		console.log("Closed global DB instance (if any).");
 
 		// 2. Delete the existing database file
 		try {
-			if (await app.vault.adapter.exists(filePath)) {
-				await app.vault.adapter.remove(filePath);
-				console.log(`Deleted existing database file: ${filePath}`);
-			} else {
-				console.log(
-					`Database file not found, proceeding to create new: ${filePath}`
-				);
+			const existingFile = app.vault.getAbstractFileByPath(filePath);
+			if (existingFile) {
+				if (existingFile instanceof TFile) {
+					await app.vault.delete(existingFile);
+				}
 			}
 		} catch (removeError) {
 			console.error(
@@ -87,7 +75,6 @@ export async function indexVaultCommand(
 
 		// 3. Fetch embedding dimension if not already fetched
 		if (embeddingDimension === null) {
-			console.log("Fetching embedding dimension...");
 			try {
 				const testEmbeddings = await getTextEmbeddings(
 					["test"],
@@ -95,9 +82,6 @@ export async function indexVaultCommand(
 				);
 				if (testEmbeddings && testEmbeddings[0]) {
 					embeddingDimension = testEmbeddings[0].length;
-					console.log(
-						`Embedding dimension set to: ${embeddingDimension}`
-					);
 				} else {
 					throw new Error(
 						"Failed to get test embeddings to determine dimension."
@@ -116,7 +100,6 @@ export async function indexVaultCommand(
 		}
 
 		// 4. Explicitly create a new database instance with metadata as string
-		console.log("Creating new Orama database instance for indexing...");
 		try {
 			const schemaDefinition = {
 				text: "string",
@@ -125,7 +108,6 @@ export async function indexVaultCommand(
 				file_path: "string",
 			};
 			db = await create<MySchema>({ schema: schemaDefinition });
-			console.log("New Orama database instance created successfully.");
 		} catch (createError) {
 			console.error(
 				"Error creating new Orama database instance:",
@@ -141,9 +123,8 @@ export async function indexVaultCommand(
 		const allChunks: {
 			chunk: string;
 			filePath: string;
-			frontmatter: any;
+			frontmatter: FrontMatterCache;
 		}[] = [];
-		console.log("Collecting chunks and frontmatter...");
 		for (const file of files) {
 			if (
 				file.extension !== "md" ||
@@ -161,7 +142,6 @@ export async function indexVaultCommand(
 				// Remove frontmatter from fileContent
 				const frontmatterInfo = getFrontMatterInfo(fileContent);
 				if (frontmatterInfo?.exists) {
-					const originalLength = fileContent.length;
 					fileContent = fileContent.slice(
 						frontmatterInfo.contentStart
 					);
@@ -182,10 +162,14 @@ export async function indexVaultCommand(
 				);
 			}
 		}
-		console.log(`Collected ${allChunks.length} chunks.`);
+
+		const totalChunks = allChunks.length;
+		progressNotice = new Notice(
+			`Starting indexing 0% (0/${totalChunks} chunks)...`,
+			0
+		); // 0 timeout = persistent
 
 		// 6. Process and insert chunks in batches
-		console.log("Processing and inserting chunks...");
 		const batchSize = settings.batchSize || 10;
 		for (let i = 0; i < totalChunks; i += batchSize) {
 			const batch = allChunks.slice(i, i + batchSize);
@@ -237,14 +221,13 @@ export async function indexVaultCommand(
 
 		// 7. Save the newly created and populated database
 		if (db) {
-			console.log("Saving the new database...");
 			try {
 				const persistedData = await persist(db, "binary");
+				// Use writeBinary to overwrite the file if it exists
 				await app.vault.adapter.writeBinary(
 					filePath,
 					persistedData as ArrayBuffer
 				);
-				console.log("New database saved successfully to:", filePath);
 				// Update notice on successful save
 				if (progressNotice) {
 					progressNotice.setMessage(
@@ -253,7 +236,9 @@ export async function indexVaultCommand(
 					// Hide after a short delay
 					setTimeout(() => progressNotice.hide(), 5000);
 				}
-			} catch (saveError) {
+			} catch (saveError: any) {
+				// Catch errors from persist() or writeBinary()
+				// No need to specifically handle "File already exists" as writeBinary overwrites
 				if (progressNotice) {
 					progressNotice.setMessage(
 						`Error saving database: ${saveError.message}. Indexing complete, but data not saved.`
@@ -264,9 +249,6 @@ export async function indexVaultCommand(
 				console.error(
 					"Error saving the newly indexed database:",
 					saveError
-				);
-				new Notice(
-					`Error saving database: ${saveError.message}. Indexing complete, but data not saved.`
 				);
 			}
 		} else {
@@ -303,16 +285,13 @@ export async function indexVaultCommand(
 			setTimeout(() => progressNotice.hide(), 1000); // Short delay before final hide
 		}
 		db = null; // Clear local instance
-		console.log("Indexing command finished.");
 		// Notify the server instance to reload its internal DB reference
 		if (
 			serverInstance &&
 			typeof serverInstance.reloadOramaDBInstance === "function"
 		) {
-			console.log("Notifying server instance to reload its database...");
 			try {
 				await serverInstance.reloadOramaDBInstance();
-				console.log("Server instance reload notification sent.");
 			} catch (reloadError) {
 				console.error(
 					"Error calling reloadOramaDBInstance on server:",

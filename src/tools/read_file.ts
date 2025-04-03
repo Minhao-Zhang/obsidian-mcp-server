@@ -1,4 +1,4 @@
-import { App, normalizePath } from "obsidian";
+import { App, normalizePath, TFile } from "obsidian";
 
 export async function readFileTool(
 	app: App,
@@ -9,10 +9,13 @@ export async function readFileTool(
 	}
 
 	const normalizedPath = normalizePath(relativePath);
-	const adapter = app.vault.adapter;
 
 	try {
-		const fileContent = await adapter.read(normalizedPath);
+		const abstractFile = app.vault.getAbstractFileByPath(normalizedPath);
+		if (!abstractFile || !(abstractFile instanceof TFile)) {
+			return JSON.stringify({ error: "File not found." });
+		}
+		const fileContent = await app.vault.read(abstractFile);
 		return fileContent;
 	} catch (error) {
 		console.error("Error reading file:", error);

@@ -6,7 +6,7 @@ import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
 import { writeFileTool } from "./tools/write_files.js";
 import { oramaOperations } from "./utils/orama_operations.js";
-import { getOramaDB, countEntries, closeDatabase } from "./orama-db.js";
+import { countEntries, closeDatabase } from "./orama-db.js";
 import { vectorSearch } from "./tools/vector_search.js";
 
 export class MCPServer {
@@ -78,7 +78,6 @@ export class MCPServer {
 					port: this.port,
 				},
 			});
-			console.log("MCP Server started successfully on port", this.port);
 		} catch (error) {
 			console.error("Error starting MCP server:", error);
 			new Notice(
@@ -272,7 +271,6 @@ export class MCPServer {
 			this.cleanupCallbacks = [];
 
 			this.server.stop();
-			console.log("MCP Server stopped successfully");
 			// Also close the DB connection and stop persistence on server stop
 			closeDatabase().catch((err) =>
 				console.error("Error closing database on server stop:", err)
@@ -280,6 +278,16 @@ export class MCPServer {
 		} catch (error) {
 			console.error("Error stopping MCP server:", error);
 			new Notice(`Error stopping MCP server. See console for details.`);
+		}
+	}
+
+	async triggerSaveDb() {
+		try {
+			await oramaOperations.saveOramaDb(this.app, this.settings);
+			new Notice("Orama DB saved manually.");
+		} catch (error: any) {
+			console.error("Error saving Orama DB:", error);
+			new Notice(`Error saving Orama DB: ${error.message}`);
 		}
 	}
 }

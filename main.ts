@@ -1,8 +1,5 @@
 import { Notice, Plugin } from "obsidian";
 import { MCPServer } from "./src/mcp-server.js"; // Ensure MCPServer is imported
-import { stopOramaPersistence, saveDatabase } from "./src/orama-db.js";
-// initializeOramaDbCommand might be redundant now if indexVaultCommand handles creation
-// import { initializeOramaDbCommand } from "./src/commands/initializeOramaDbCommand.js";
 import { saveOramaDbCommand } from "./src/commands/saveOramaDbCommand.js";
 // Import the command function itself
 import { indexVaultCommand } from "./src/commands/indexVaultCommand";
@@ -23,7 +20,6 @@ export default class ObsidianMCPServer extends Plugin {
 
 		// Start MCP server if startOnStartup is enabled
 		if (this.settings.startOnStartup) {
-			console.log("Autostart is enabled");
 			this.startMCPServer(); // This initializes this.mcpServer
 		}
 
@@ -139,9 +135,6 @@ export default class ObsidianMCPServer extends Plugin {
 	async onunload() {
 		// Clean up
 		this.stopMCPServer(); // Stops server and closes DB via server's stop method
-		// stopOramaPersistence(); // Already called within mcpServer.stop -> closeDatabase
-		console.log("Obsidian MCP Server plugin unloaded.");
-		// No need for final save here if server stop handles it
 	}
 
 	async loadSettings() {
@@ -160,11 +153,10 @@ export default class ObsidianMCPServer extends Plugin {
 	// Renamed for clarity, ensures only one server instance runs
 	private startMCPServer() {
 		if (this.mcpServer) {
-			console.log("MCP Server already running.");
 			new Notice("MCP Server is already running.");
 			return;
 		}
-		console.log("Starting MCP Server...");
+
 		try {
 			this.mcpServer = new MCPServer(
 				this.app,
@@ -182,13 +174,11 @@ export default class ObsidianMCPServer extends Plugin {
 
 	private stopMCPServer() {
 		if (this.mcpServer) {
-			console.log("Stopping MCP Server...");
 			this.mcpServer.stop(); // This should handle closing DB etc.
 			this.mcpServer = undefined;
 			new Notice("MCP Server stopped");
 		} else {
-			console.log("MCP Server already stopped.");
-			// new Notice("MCP Server is already stopped."); // Optional notice
+			new Notice("MCP Server is already stopped."); // Optional notice
 		}
 	}
 }

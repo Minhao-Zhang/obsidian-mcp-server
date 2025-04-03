@@ -43,13 +43,11 @@ export function stopOramaPersistence() {
 	if (persistenceInterval) {
 		clearInterval(persistenceInterval);
 		persistenceInterval = null;
-		console.log("Orama persistence interval stopped.");
 	}
 }
 
 export async function saveDatabase(app: App, filePath: string) {
 	if (isSaving) {
-		console.log("Save already in progress, skipping.");
 		return;
 	}
 	if (!db) {
@@ -60,14 +58,12 @@ export async function saveDatabase(app: App, filePath: string) {
 	}
 
 	isSaving = true;
-	console.log("Attempting to save global Orama database...");
 	try {
 		const persistedData = await persist(db, "binary");
 		await app.vault.adapter.writeBinary(
 			filePath,
 			persistedData as ArrayBuffer
 		);
-		console.log("Global Orama database saved successfully to:", filePath);
 	} catch (error) {
 		console.error("Error persisting global Orama database:", error);
 		new Notice(`Error saving Orama DB: ${error.message || error}`);
@@ -88,14 +84,10 @@ async function loadOrCreateDatabase(
 	let loadedDb: Orama<MySchema> | null = null;
 
 	if (embeddingDimension === null) {
-		console.log("Fetching embedding dimension in loadOrCreateDatabase...");
 		try {
 			const testEmbeddings = await getTextEmbeddings(["test"], settings);
 			if (testEmbeddings && testEmbeddings[0]) {
 				embeddingDimension = testEmbeddings[0].length;
-				console.log(
-					`Embedding dimension set to: ${embeddingDimension}`
-				);
 			} else {
 				throw new Error("Failed to get test embeddings.");
 			}
@@ -112,13 +104,11 @@ async function loadOrCreateDatabase(
 
 	const fileExists = await app.vault.adapter.exists(filePath);
 	if (fileExists) {
-		console.log("Database file exists, attempting to restore...");
 		try {
 			const rawData = await app.vault.adapter.readBinary(filePath);
 			const nodeBuffer = Buffer.from(rawData);
 			// Restore function might need the schema type hint if it changed
 			loadedDb = (await restore("binary", nodeBuffer)) as Orama<MySchema>;
-			console.log("Orama database restored successfully from file.");
 		} catch (restoreError) {
 			console.error(
 				"Error restoring Orama database, will create a new one:",
@@ -127,16 +117,13 @@ async function loadOrCreateDatabase(
 			loadedDb = null;
 		}
 	} else {
-		console.log("Database file does not exist.");
 	}
 
 	if (!loadedDb) {
-		console.log("Creating a new Orama database instance...");
 		needsInitialSave = true;
 		try {
 			const schemaDefinition = getInternalDynamicSchema(); // Uses string for metadata
 			loadedDb = await create<MySchema>({ schema: schemaDefinition });
-			console.log("New Orama database created successfully.");
 		} catch (createError) {
 			console.error("Error creating new Orama database:", createError);
 			throw new Error(
@@ -148,22 +135,13 @@ async function loadOrCreateDatabase(
 	db = loadedDb; // Assign to global instance
 
 	if (!persistenceInterval) {
-		console.log("Setting up persistence interval.");
 		if (needsInitialSave && db) {
-			console.log(
-				"Performing initial save for newly created database..."
-			);
 			await saveDatabase(app, filePath);
 		}
 
 		persistenceInterval = setInterval(
 			() => saveDatabase(app, filePath),
 			(settings.saveIntervalMinutes || 5) * 60 * 1000
-		);
-		console.log(
-			`Persistence interval started (${
-				settings.saveIntervalMinutes || 5
-			} minutes).`
 		);
 	}
 
@@ -179,17 +157,11 @@ export async function getOramaDB(
 	forceReload: boolean = false
 ): Promise<Orama<MySchema> | null> {
 	if (forceReload && db) {
-		console.log(
-			"Force reload requested. Closing current DB instance and stopping persistence."
-		);
 		stopOramaPersistence();
 		db = null;
 	}
 
 	if (!db) {
-		console.log(
-			"No active DB instance or force reload. Loading or creating..."
-		);
 		try {
 			db = await loadOrCreateDatabase(app, settings);
 		} catch (error) {
@@ -202,13 +174,9 @@ export async function getOramaDB(
 }
 
 export async function closeDatabase() {
-	console.log("closeDatabase called.");
 	stopOramaPersistence();
 	if (db) {
 		db = null;
-		console.log("Global Orama database instance closed (set to null).");
-	} else {
-		console.log("No active global Orama database instance to close.");
 	}
 }
 

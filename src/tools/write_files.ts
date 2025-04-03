@@ -10,13 +10,13 @@ export async function writeFileTool(
 	}
 
 	const normalizedPath = normalizePath(relativePath);
-	const adapter = app.vault.adapter;
 
 	try {
-		if (await adapter.exists(normalizedPath)) {
+		const existingFile = app.vault.getAbstractFileByPath(normalizedPath);
+		if (existingFile) {
 			return JSON.stringify({ error: "File already exists." });
 		} else {
-			await adapter.write(normalizedPath, content);
+			await app.vault.create(normalizedPath, content);
 			return JSON.stringify({ success: "File created successfully." });
 		}
 	} catch (error) {

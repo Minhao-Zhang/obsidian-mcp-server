@@ -5,6 +5,7 @@ import {
 	TextAreaComponent,
 	ButtonComponent,
 	Notice,
+	TFile,
 } from "obsidian";
 import OpenAI from "openai";
 import ObsidianMCPServer from "../main";
@@ -55,8 +56,6 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-
-		new Setting(containerEl).setName("General").setHeading();
 
 		new Setting(containerEl)
 			.setName("Port")
@@ -206,13 +205,22 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 			.setButtonText("Copy from .gitignore")
 			.onClick(async () => {
 				try {
-					const gitignoreContent = await this.app.vault.adapter.read(
-						".gitignore"
-					);
-					ignorePatternsTextArea.setValue(gitignoreContent);
-					this.plugin.settings.ignorePatterns = gitignoreContent;
-					await this.plugin.saveSettings();
-					new Notice(".gitignore content copied to settings.");
+					const gitignoreAbstractFile =
+						this.app.vault.getAbstractFileByPath(".gitignore");
+					if (gitignoreAbstractFile instanceof TFile) {
+						const gitignoreContent = await this.app.vault.read(
+							gitignoreAbstractFile
+						);
+						ignorePatternsTextArea.setValue(gitignoreContent);
+						this.plugin.settings.ignorePatterns = gitignoreContent;
+						await this.plugin.saveSettings();
+						new Notice(".gitignore content copied to settings.");
+					} else {
+						new Notice(
+							"Could not read .gitignore file. Make sure it exists in the vault root."
+						);
+						console.error(".gitignore is not a file");
+					}
 				} catch (error) {
 					new Notice(
 						"Could not read .gitignore file. Make sure it exists in the vault root."
@@ -296,7 +304,8 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 					.setValue(JSON.stringify(this.plugin.settings.separators))
 					.onChange(async (value) => {
 						try {
-							const separators = JSON.parse(value);
+							const trimmedValue = value.trim();
+							const separators = JSON.parse(trimmedValue);
 							if (
 								Array.isArray(separators) &&
 								separators.every((s) => typeof s === "string")
@@ -308,9 +317,9 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 									"Invalid separators. Please enter a valid JSON array of strings."
 								);
 							}
-						} catch (e) {
+						} catch (e: any) {
 							new Notice(
-								"Invalid separators. Please enter a valid JSON array."
+								`Invalid separators. Please enter a valid JSON array. Error: ${e.message}`
 							);
 						}
 					})
