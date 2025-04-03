@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { App, Notice, TFile } from "obsidian";
+import { App, Notice, TFile, getFrontMatterInfo } from "obsidian";
 import * as fs from "fs";
 import ObsidianMCPServer from "../../main";
 import { MCPServer } from "../mcp-server"; // Import MCPServer type
@@ -48,10 +48,18 @@ export async function indexVaultCommand(
 	});
 
 	let db: Orama<MySchema> | null = null; // Local DB instance for this command
+	let progressNotice: Notice | null = null;
 
 	try {
 		const pluginDataDir = `${app.vault.configDir}/plugins/Obsidian-MCP-Server`;
 		const filePath = `${pluginDataDir}/orama.msp`;
+
+		// Create a persistent notice for progress
+		const totalChunks = allChunks.length;
+		progressNotice = new Notice(
+			`Starting indexing 0% (0/${totalChunks} chunks)...`,
+			0
+		); // 0 timeout = persistent
 
 		// 1. Close any globally held DB instance
 		await closeDatabase();
@@ -146,9 +154,19 @@ export async function indexVaultCommand(
 			}
 
 			try {
-				const fileContent = await app.vault.read(file);
+				let fileContent = await app.vault.read(file);
 				const cache = app.metadataCache.getFileCache(file);
 				const frontmatter = cache?.frontmatter || {};
+
+				// Remove frontmatter from fileContent
+				const frontmatterInfo = getFrontMatterInfo(fileContent);
+				if (frontmatterInfo?.exists) {
+					const originalLength = fileContent.length;
+					fileContent = fileContent.slice(
+						frontmatterInfo.contentStart
+					);
+				}
+
 				const chunks = await splitter.splitText(fileContent);
 				allChunks.push(
 					...chunks.map((chunk) => ({
@@ -169,7 +187,7 @@ export async function indexVaultCommand(
 		// 6. Process and insert chunks in batches
 		console.log("Processing and inserting chunks...");
 		const batchSize = settings.batchSize || 10;
-		for (let i = 0; i < allChunks.length; i += batchSize) {
+		for (let i = 0; i < totalChunks; i += batchSize) {
 			const batch = allChunks.slice(i, i + batchSize);
 			const batchTexts = batch.map((item) => item.chunk);
 
@@ -203,6 +221,18 @@ export async function indexVaultCommand(
 					error
 				);
 			}
+
+			// Update progress notice
+			const processedChunks = Math.min(i + batchSize, totalChunks);
+			const percentage =
+				totalChunks > 0
+					? Math.round((processedChunks / totalChunks) * 100)
+					: 100;
+			if (progressNotice) {
+				progressNotice.setMessage(
+					`Indexing... ${percentage}% (${processedChunks}/${totalChunks} chunks)`
+				);
+			}
 		}
 
 		// 7. Save the newly created and populated database
@@ -215,10 +245,22 @@ export async function indexVaultCommand(
 					persistedData as ArrayBuffer
 				);
 				console.log("New database saved successfully to:", filePath);
-				new Notice(
-					`Indexing complete. Indexed ${indexedCount} chunks. Database saved.`
-				);
+				// Update notice on successful save
+				if (progressNotice) {
+					progressNotice.setMessage(
+						`Indexing complete. Indexed ${indexedCount} chunks. Database saved.`
+					);
+					// Hide after a short delay
+					setTimeout(() => progressNotice.hide(), 5000);
+				}
 			} catch (saveError) {
+				if (progressNotice) {
+					progressNotice.setMessage(
+						`Error saving database: ${saveError.message}. Indexing complete, but data not saved.`
+					);
+					// Hide after a delay
+					setTimeout(() => progressNotice.hide(), 10000);
+				}
 				console.error(
 					"Error saving the newly indexed database:",
 					saveError
@@ -229,16 +271,37 @@ export async function indexVaultCommand(
 			}
 		} else {
 			console.error("Database instance was null, cannot save.");
-			new Notice(
-				"Indexing finished, but database instance was invalid. Data not saved."
-			);
+			if (progressNotice) {
+				progressNotice.setMessage(
+					"Indexing finished, but database instance was invalid. Data not saved."
+				);
+				// Hide after a delay
+				setTimeout(() => progressNotice.hide(), 10000);
+			}
 		}
 	} catch (error) {
 		console.error("Critical error during vault indexing:", error);
-		new Notice(
-			`Error indexing vault: ${error.message || error}. See console.`
-		);
+		// Ensure notice is updated/hidden in case of critical error
+		if (progressNotice) {
+			progressNotice.setMessage(
+				`Error indexing vault: ${error.message || error}. See console.`
+			);
+			setTimeout(() => progressNotice.hide(), 10000);
+		} else {
+			new Notice(
+				`Error indexing vault: ${error.message || error}. See console.`
+			);
+		}
 	} finally {
+		// Ensure notice is hidden if it hasn't been already
+		if (
+			progressNotice &&
+			progressNotice.noticeEl &&
+			!progressNotice.noticeEl.hidden
+		) {
+			// Check if it's already hidden to avoid errors if timeout already fired
+			setTimeout(() => progressNotice.hide(), 1000); // Short delay before final hide
+		}
 		db = null; // Clear local instance
 		console.log("Indexing command finished.");
 		// Notify the server instance to reload its internal DB reference
