@@ -2,7 +2,7 @@
 
 This Obsidian plugin runs a local MCP (Model Context Protocol) server, allowing external applications (like AI assistants, scripts, or other tools) to interact with your Obsidian vault through a standardized interface.
 
-This is a work-in-progress plugin, and while it is functional, it may have bugs or incomplete features. Please report any issues you encounter. I don't know TypeScript that well so there might be security and reliability issues. You can help by opening issues or pull requests on GitHub. 
+This is a work-in-progress plugin, and while it is functional, it may have bugs or incomplete features. Please report any issues you encounter. I don't know TypeScript that well so there might be security and reliability issues. You can help by opening issues or pull requests on GitHub. I will try to respond to them as soon as possible.
 
 ## Features
 
@@ -47,7 +47,7 @@ Access the plugin settings within Obsidian to configure:
 1. **Configure:** Set up the plugin via the Obsidian settings panel, especially the Embedding Model details.
 2. **Index Vault:** Run the "Re-index Vault (MCP Server)" command from the Obsidian command palette. This is necessary for the `simple_vector_search` tool to function. Wait for the indexing process to complete (a notification will appear).
 3. **Start Server:** Ensure the MCP server is running. Either enable "Auto Start MCP" in settings or use the "Start MCP Server" command.
-4. **Connect External Tool:** Connect your MCP client (e.g., an AI assistant configured to use MCP) to the server endpoint displayed in the settings (e.g., `http://localhost:9090/sse`).
+4. **Connect External Tool:** Connect your MCP client (e.g., an AI assistant configured to use MCP) to the server endpoint displayed in the settings (e.g., `http://localhost:8080/sse`).
 5. **Utilize Tools:** Use the available MCP tools (`simple_vector_search`, `list_files`, `read_file`, etc.) from your connected client to interact with your Obsidian vault.
 
 ## Development
