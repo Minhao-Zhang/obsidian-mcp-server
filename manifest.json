@@ -1,11 +1,10 @@
 {
-	"id": "obsidian-mcp-server",
+	"id": "mcp-server",
 	"name": "Obsidian MCP Server",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "MCP server implementation as Obsidian plugin",
 	"author": "Minhao Zhang",
 	"authorUrl": "https://github.com/Minhao-Zhang",
-	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }

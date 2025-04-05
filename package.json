@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-mcp-server",
+	"name": "mcp-server",
 	"version": "1.0.0",
 	"description": "MCP server plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",

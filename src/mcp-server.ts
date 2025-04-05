@@ -5,6 +5,7 @@ import { App, Notice } from "obsidian";
 import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
 import { writeFileTool } from "./tools/write_files.js";
+import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js"; // Added import for edit_file
 import { oramaOperations } from "./utils/orama_operations.js";
 import { countEntries, closeDatabase } from "./orama-db.js";
 import { vectorSearch } from "./tools/vector_search.js";
@@ -91,7 +92,7 @@ export class MCPServer {
 		this.server.addTool({
 			name: "simple_vector_search",
 			description:
-				"Search the Orama database for notes semantically similar to a query and return results in simple text format.",
+				"Searches your Obsidian Vault notes (indexed in Orama) for content semantically similar to your query. Returns matching note snippets. If results aren't relevant, try rephrasing your query or adjusting the `similarity` threshold (lower for broader matches, higher for stricter).",
 			parameters: z.object({
 				query: z
 					.string()
@@ -145,7 +146,7 @@ export class MCPServer {
 		this.server.addTool({
 			name: "count_entries",
 			description:
-				"Get the number of entries in the Orama database. Useful for understanding the size and scope of the indexed data.",
+				"Counts the number of indexed notes and chunks in your Obsidian Vault's Orama database. Useful for checking the indexing status or scope. If the count seems incorrect, consider re-indexing your vault.",
 			parameters: z.object({}),
 			execute: async () => {
 				if (!this.oramaDB) {
@@ -188,7 +189,7 @@ export class MCPServer {
 		this.server.addTool({
 			name: "list_files",
 			description:
-				"List files and sub-folders within the Obsidian vault. Root directory is `.`. Do not path traversal into parent folders.",
+				"Lists files and sub-folders within a specified directory of your Obsidian Vault. Use '.' for the vault root. If you don't see expected files, double-check the `relative_path` provided. Note: This tool cannot access folders outside the vault.",
 			parameters: z.object({
 				relative_path: z
 					.string()
@@ -211,17 +212,31 @@ export class MCPServer {
 		this.server.addTool({
 			name: "read_file",
 			description:
-				"Retrieve the content of a file within the Obsidian vault. Essential for examining file contents, extracting information, or making modifications.",
+				"Reads the full content of a specific note or file within your Obsidian Vault. Provide the `relative_path` from the vault root. Optionally, set `line_number` to true to prepend line numbers to each line. If the content seems wrong or the file isn't found, verify the path is correct and the file exists within the vault.",
 			parameters: z.object({
 				relative_path: z
 					.string()
 					.describe(
 						"Relative path to the file to the root of the Obsidian vault."
 					),
+				line_number: z // Add line_number parameter
+					.boolean()
+					.optional()
+					.describe(
+						"Whether to include line numbers in the output. Defaults to false."
+					),
 			}),
-			execute: async (input: { relative_path: string }) => {
+			execute: async (input: {
+				relative_path: string;
+				line_number?: boolean; // Add line_number to input type
+			}) => {
 				try {
-					return await readFileTool(this.app, input.relative_path);
+					// Pass line_number to the tool function
+					return await readFileTool(
+						this.app,
+						input.relative_path,
+						input.line_number
+					);
 				} catch (error) {
 					console.error("Error reading file:", error);
 					return JSON.stringify({
@@ -234,7 +249,7 @@ export class MCPServer {
 		this.server.addTool({
 			name: "write_file",
 			description:
-				"Writes content to a file, creating directories if needed. Fail if file exists.", // Updated description
+				"Creates a new file with the specified content at the given path within your Obsidian Vault. Creates necessary sub-folders if they don't exist. This tool will fail if a file already exists at the specified `relative_path`. Ensure the path is correct and points to a non-existent file location.",
 			parameters: z.object({
 				relative_path: z
 					.string()
@@ -258,6 +273,36 @@ export class MCPServer {
 					console.error("Error writing file:", error);
 					return JSON.stringify({
 						error: "Failed to write file. See console for details.",
+					});
+				}
+			},
+		});
+
+		this.server.addTool({
+			name: "edit_file",
+			description:
+				"Edits a specific range of lines within a file in your Obsidian Vault. Replaces the content between `start_line` and `end_line` (inclusive) with the provided `new_content`. Use with caution. **Hint:** Use the `read_file` tool with `line_number: true` first to accurately identify the line numbers you need to edit.",
+			parameters: editFileParametersSchema, // Use the imported schema
+			execute: async (input: any) => {
+				// Use 'any' for input type or infer from schema if possible with FastMCP
+				try {
+					// Validate input again just in case (FastMCP might do this)
+					const validatedInput =
+						editFileParametersSchema.parse(input);
+					return await editFileTool(this.app, validatedInput);
+				} catch (error: any) {
+					console.error("Error editing file via tool:", error);
+					// Handle Zod validation errors specifically if needed
+					if (error instanceof z.ZodError) {
+						return JSON.stringify({
+							error: "Invalid parameters provided.",
+							details: error.errors,
+						});
+					}
+					return JSON.stringify({
+						error: `Failed to execute edit_file tool: ${
+							error.message || error
+						}`,
 					});
 				}
 			},
