@@ -169,9 +169,9 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 				"Specify file patterns to exclude from search indexing (uses .gitignore syntax). Patterns match against full file paths."
 			);
 
-		const fullWidthContainer = containerEl.createDiv();
-		fullWidthContainer.style.width = "100%";
-		fullWidthContainer.style.marginBottom = "1em";
+		const fullWidthContainer = containerEl.createDiv({
+			cls: "mcp-full-width-container",
+		});
 
 		let ignorePatternsTextArea: TextAreaComponent;
 		const textAreaContainer = fullWidthContainer.createDiv();
@@ -189,17 +189,14 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 *.pdf`
 			)
 			.setValue(this.plugin.settings.ignorePatterns);
-		textArea.inputEl.style.minHeight = "200px";
-		textArea.inputEl.style.width = "100%";
 		textArea.onChange(async (value: string) => {
 			this.plugin.settings.ignorePatterns = value;
 			await this.plugin.saveSettings();
 		});
 
-		const buttonRow = fullWidthContainer.createDiv();
-		buttonRow.style.display = "flex";
-		buttonRow.style.justifyContent = "flex-end";
-		buttonRow.style.marginTop = "0.5em";
+		const buttonRow = fullWidthContainer.createDiv({
+			cls: "mcp-button-row",
+		});
 
 		new ButtonComponent(buttonRow)
 			.setButtonText("Copy from .gitignore")
@@ -233,25 +230,26 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 			.setName("Stored Document Chunks")
 			.setDesc("Loading count...");
 
-		const mcpServerInstance = (this.plugin as any).mcpServer;
-		if (mcpServerInstance && mcpServerInstance.oramaDB) {
-			countEntries(mcpServerInstance.oramaDB)
-				.then((count) => {
+		// Use the new public method to get the count
+		this.plugin
+			.getDbCount()
+			.then((count) => {
+				if (count !== null) {
 					countSetting.setDesc(`Total chunks inserted: ${count}`);
-				})
-				.catch((error) => {
-					console.error(
-						"Error getting Orama DB count for settings:",
-						error
+				} else {
+					countSetting.setDesc(
+						"MCP Server not running or Vector DB not initialized."
 					);
-					countSetting.setDesc("Error loading count.");
-					new Notice(`Failed to get chunk count: ${error.message}`);
-				});
-		} else {
-			countSetting.setDesc(
-				"MCP Server not running or Vector DB not initialized."
-			);
-		}
+				}
+			})
+			.catch((error) => {
+				console.error(
+					"Error getting Orama DB count via plugin method:",
+					error
+				);
+				countSetting.setDesc("Error loading count.");
+				new Notice(`Failed to get chunk count: ${error.message}`);
+			});
 
 		new Setting(this.containerEl).setName("Chunking").setHeading();
 

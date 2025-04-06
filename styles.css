@@ -1,0 +1,31 @@
+/* Styles moved from src/settings.ts */
+
+.mcp-full-width-container {
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.mcp-full-width-container textarea {
+  min-height: 200px;
+  width: 100%;
+}
+
+.mcp-button-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5em;
+}
+
+.dangerous-zone .setting-item-info {
+  color: var(--text-error); /* Use Obsidian's error text color */
+}
+
+.dangerous-zone .setting-item-control button {
+  background-color: var(--background-modifier-error); /* Use Obsidian's error background color */
+  color: var(--text-on-error);
+  border-color: var(--background-modifier-error-hover);
+}
+
+.dangerous-zone .setting-item-control button:hover {
+  background-color: var(--background-modifier-error-hover);
+}

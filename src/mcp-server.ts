@@ -61,6 +61,22 @@ export class MCPServer {
 		return this.oramaDB;
 	}
 
+	// Public method to safely get the count from the private DB instance
+	async getOramaDbCount(): Promise<number | null> {
+		if (!this.oramaDB) {
+			console.warn(
+				"Attempted to get count, but OramaDB is not initialized."
+			);
+			return null; // Or throw an error, depending on desired behavior
+		}
+		try {
+			return await countEntries(this.oramaDB);
+		} catch (error) {
+			console.error("Error counting entries in getOramaDbCount:", error);
+			return null; // Return null on error
+		}
+	}
+
 	start() {
 		try {
 			// Setup error handler before starting

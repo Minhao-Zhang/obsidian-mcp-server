@@ -26,7 +26,7 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to start MCP server
 		this.addCommand({
 			id: "start-mcp-server",
-			name: "Start MCP Server",
+			name: "Start Server",
 			callback: () => {
 				if (!this.mcpServer) {
 					this.startMCPServer();
@@ -39,7 +39,7 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to stop MCP server
 		this.addCommand({
 			id: "stop-mcp-server",
-			name: "Stop MCP Server",
+			name: "Stop Server",
 			callback: () => {
 				this.stopMCPServer();
 			},
@@ -48,7 +48,7 @@ export default class ObsidianMCPServer extends Plugin {
 		// Command to trigger re-indexing
 		this.addCommand({
 			id: "index-vault", // New command ID
-			name: "Re-index Vault (MCP Server)", // New command name
+			name: "Re-index Vault", // New command name
 			callback: () => {
 				if (!this.mcpServer) {
 					new Notice(
@@ -77,7 +77,7 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to manually save Orama DB (might still be useful for debugging)
 		this.addCommand({
 			id: "save-orama-db",
-			name: "Save Orama DB Manually (MCP Server)",
+			name: "Save Vector Database Manually",
 			callback: () => {
 				if (!this.mcpServer) {
 					new Notice("MCP Server is not running. Cannot save DB.");
@@ -180,5 +180,13 @@ export default class ObsidianMCPServer extends Plugin {
 		} else {
 			new Notice("MCP Server is already stopped."); // Optional notice
 		}
+	}
+
+	// Public method for settings tab to safely get the DB count
+	async getDbCount(): Promise<number | null> {
+		if (this.mcpServer) {
+			return await this.mcpServer.getOramaDbCount();
+		}
+		return null; // Return null if server isn't running
 	}
 }

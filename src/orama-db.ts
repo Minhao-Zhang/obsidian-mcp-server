@@ -78,7 +78,7 @@ async function loadOrCreateDatabase(
 	app: App,
 	settings: any
 ): Promise<Orama<MySchema>> {
-	const pluginDataDir = `${app.vault.configDir}/plugins/MCP-Server`;
+	const pluginDataDir = `${app.vault.configDir}/plugins/obsidian-mcp-server`;
 	const filePath = `${pluginDataDir}/orama.msp`;
 	let needsInitialSave = false;
 	let loadedDb: Orama<MySchema> | null = null;

@@ -26,7 +26,6 @@
 		"@orama/orama": "^3.1.4",
 		"@orama/plugin-data-persistence": "^3.1.4",
 		"fastmcp": "^1.20.5",
-		"ignore": "^7.0.3",
 		"langchain": "^0.3.19",
 		"openai": "^4.90.0",
 		"zod": "^3.24.2"
