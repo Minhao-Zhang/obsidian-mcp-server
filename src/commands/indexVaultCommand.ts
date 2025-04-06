@@ -49,7 +49,7 @@ export async function indexVaultCommand(
 	let progressNotice: Notice | null = null;
 
 	try {
-		const pluginDataDir = `${app.vault.configDir}/plugins/obsidian-mcp-server`;
+		const pluginDataDir = `${app.vault.configDir}/plugins/mcp-server`;
 		const filePath = `${pluginDataDir}/orama.msp`;
 
 		// 1. Close any globally held DB instance
