@@ -49,6 +49,8 @@ Access the plugin settings within Obsidian to configure:
 3. **Start Server:** Ensure the MCP server is running. Either enable "Auto Start MCP" in settings or use the "Start MCP Server" command.
 4. **Connect External Tool:** Connect your MCP client (e.g., an AI assistant configured to use MCP) to the server endpoint displayed in the settings (e.g., `http://localhost:8080/sse`).
 5. **Utilize Tools:** Use the available MCP tools (`simple_vector_search`, `list_files`, `read_file`, etc.) from your connected client to interact with your Obsidian vault.
+6. In your favorite MCP capable client, configure MCP to SSE mode and set the endpoint to `http://localhost:8080/sse` (or the port you configured). Then you can use the tools exposed by this plugin.
+7. **Stop Server:** Use the "Stop MCP Server" command to stop the server when not in use.
 
 ## Development
 
@@ -59,3 +61,7 @@ This project uses TypeScript. Ensure you have Node.js and npm installed.
 3. Run `npm run dev` to compile the plugin and watch for changes.
 4. Copy the `main.js`, `manifest.json`, and `styles.css` files into your Obsidian vault's `.obsidian/plugins/mcp-server/` directory.
 5. Reload Obsidian and enable the plugin.
+
+## Known Issue
+
+If your vault contains a lot of notes, the indexing process would fail as the database cannot be saved to a single local file. This will happen if the `orama.msp` file is larger than 512MB. There is no workaround for this yet. You can try to reduce the number of notes in your vault or use a different vector database that supports sharding (like Pinecone). 
