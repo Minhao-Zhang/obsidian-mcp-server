@@ -48,6 +48,7 @@ export function stopOramaPersistence() {
 
 export async function saveDatabase(app: App, filePath: string) {
 	if (isSaving) {
+		console.log("Save already in progress, skipping."); // Added log
 		return;
 	}
 	if (!db) {
@@ -56,15 +57,19 @@ export async function saveDatabase(app: App, filePath: string) {
 		);
 		return;
 	}
-
 	isSaving = true;
 	try {
-		const persistedData = await persist(db, "binary");
-		await app.vault.adapter.writeBinary(
-			filePath,
-			persistedData as ArrayBuffer
-		);
+		const currentCount = await count(db);
+
+		const persistedData = await persist(db, "json");
+		await app.vault.adapter.write(filePath, persistedData as string);
 	} catch (error) {
+		// Log the error more explicitly here as well
+		console.error(
+			`Error during Orama persist/write for ${filePath}:`,
+			error
+		);
+		// The original error logging remains:
 		console.error("Error persisting global Orama database:", error);
 		new Notice(`Error saving Orama DB: ${error.message || error}`);
 	} finally {
@@ -79,7 +84,7 @@ async function loadOrCreateDatabase(
 	settings: any
 ): Promise<Orama<MySchema>> {
 	const pluginDataDir = `${app.vault.configDir}/plugins/mcp-server`;
-	const filePath = `${pluginDataDir}/orama.msp`;
+	const filePath = `${pluginDataDir}/orama.json`;
 	let needsInitialSave = false;
 	let loadedDb: Orama<MySchema> | null = null;
 
@@ -105,10 +110,9 @@ async function loadOrCreateDatabase(
 	const fileExists = await app.vault.adapter.exists(filePath);
 	if (fileExists) {
 		try {
-			const rawData = await app.vault.adapter.readBinary(filePath);
-			const nodeBuffer = Buffer.from(rawData);
+			const rawData = await app.vault.adapter.read(filePath);
 			// Restore function might need the schema type hint if it changed
-			loadedDb = (await restore("binary", nodeBuffer)) as Orama<MySchema>;
+			loadedDb = (await restore("json", rawData)) as Orama<MySchema>;
 		} catch (restoreError) {
 			console.error(
 				"Error restoring Orama database, will create a new one:",
