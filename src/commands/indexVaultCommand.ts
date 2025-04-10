@@ -50,7 +50,7 @@ export async function indexVaultCommand(
 
 	try {
 		const pluginDataDir = `${app.vault.configDir}/plugins/mcp-server`;
-		const filePath = `${pluginDataDir}/orama.msp`;
+		const filePath = `${pluginDataDir}/orama.json`;
 
 		// 1. Close any globally held DB instance
 		await closeDatabase();
@@ -222,11 +222,11 @@ export async function indexVaultCommand(
 		// 7. Save the newly created and populated database
 		if (db) {
 			try {
-				const persistedData = await persist(db, "binary");
+				const persistedData = await persist(db, "json");
 				// Use writeBinary to overwrite the file if it exists
-				await app.vault.adapter.writeBinary(
+				await app.vault.adapter.write(
 					filePath,
-					persistedData as ArrayBuffer
+					persistedData as string
 				);
 				// Update notice on successful save
 				if (progressNotice) {
