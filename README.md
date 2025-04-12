@@ -1,5 +1,7 @@
 # Obsidian MCP Server
 
+English | [中文文档（机翻）](README_zh-CN.md)
+
 This Obsidian plugin runs a local MCP (Model Context Protocol) server, allowing external applications (like AI assistants, scripts, or other tools) to interact with your Obsidian vault through a standardized interface.
 
 This is a work-in-progress plugin, and while it is functional, it may have bugs or incomplete features. Please report any issues you encounter. I don't know TypeScript that well so there might be security and reliability issues. You can help by opening issues or pull requests on GitHub. I will try to respond to them as soon as possible.
@@ -31,6 +33,14 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
     - Chunking parameters.
     - Connection verification for the embedding provider.
   - **Ribbon Icon:** Adds a status icon to the Obsidian ribbon indicating whether the MCP server is running or stopped.
+
+## TODO
+
+- [ ] Multi-language support (starting with Simplified Chinese)
+- [ ] Rename some tools to reflect the functionality more accurately
+- [ ] Add a tool that can generate notes based on Obsidian templates
+- [ ] Implement search with filtering by metadata (frontmatter)
+- [ ] Implement live tracking and updating of new notes and edits
 
 ## Configuration
 
@@ -64,4 +74,8 @@ This project uses TypeScript. Ensure you have Node.js and npm installed.
 
 ## Known Issue
 
-If your vault contains a lot of notes, the indexing process would fail as the database cannot be saved to a single local file. This will happen if the `orama.msp` file is larger than 512MB. There is no workaround for this yet. You can try to reduce the number of notes in your vault or use a different vector database that supports sharding (like Pinecone). 
+If your vault contains a lot of notes, the indexing process would fail as the database cannot be saved to a single local file. This will happen if the `orama.json` file is larger than 512MB. There is no workaround for this yet. You can try to reduce the number of notes in your vault or use a different vector database that supports sharding (like Pinecone).
+
+## OramaDB Limitation
+
+OramaDB stores floating point numbers in raw string form. This can cause the database size to increase rapidly, especially when indexing large vaults with many numerical values. This is a known limitation of the current implementation.
