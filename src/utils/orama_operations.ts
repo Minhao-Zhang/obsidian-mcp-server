@@ -3,21 +3,30 @@ import { Orama } from "@orama/orama";
 import { getOramaDB, countEntries } from "../orama-db";
 import { Notice } from "obsidian";
 
+// Define a type for the translation function signature
+type TFunction = (key: string, params?: Record<string, string>) => string;
+
 export interface OramaOperations {
-	initializeOramaDB: (app: App, settings: any) => Promise<Orama<any> | null>;
+	initializeOramaDB: (
+		app: App,
+		settings: any,
+		t: TFunction // Add t function parameter
+	) => Promise<Orama<any> | null>;
 	reloadOramaDBInstance: (
 		app: App,
-		settings: any
+		settings: any,
+		t: TFunction // Add t function parameter
 	) => Promise<Orama<any> | null>;
 }
 
 export const oramaOperations: OramaOperations = {
 	async initializeOramaDB(
 		app: App,
-		settings: any
+		settings: any,
+		t: TFunction // Receive t function
 	): Promise<Orama<any> | null> {
 		try {
-			const oramaDB = await getOramaDB(app, settings);
+			const oramaDB = await getOramaDB(app, settings, false, t);
 			if (oramaDB) {
 				const count = await countEntries(oramaDB);
 				return oramaDB;
@@ -25,7 +34,7 @@ export const oramaOperations: OramaOperations = {
 				console.error(
 					"OramaOperations: getOramaDB returned null during initialization."
 				);
-				new Notice("Failed to initialize OramaDB instance.");
+				new Notice(t("orama.initFailedInstance"));
 				return null;
 			}
 		} catch (error: any) {
@@ -33,26 +42,27 @@ export const oramaOperations: OramaOperations = {
 				"OramaOperations: Error initializing Orama database:",
 				error
 			);
-			new Notice(`Error initializing Orama database: ${error.message}`);
+			new Notice(t("orama.initError", { error: error.message }));
 			return null;
 		}
 	},
 
 	async reloadOramaDBInstance(
 		app: App,
-		settings: any
+		settings: any,
+		t: TFunction // Receive t function
 	): Promise<Orama<any> | null> {
 		try {
-			const oramaDB = await getOramaDB(app, settings, true); // forceReload = true
+			const oramaDB = await getOramaDB(app, settings, true, t);
 			if (oramaDB) {
 				const count = await countEntries(oramaDB);
-				new Notice("Database reloaded successfully.");
+				new Notice(t("orama.reloadSuccess"));
 				return oramaDB;
 			} else {
 				console.error(
 					"OramaOperations: getOramaDB returned null during reload."
 				);
-				new Notice("Failed to reload OramaDB instance after indexing.");
+				new Notice(t("orama.reloadFailedInstance"));
 				return null;
 			}
 		} catch (error: any) {
@@ -60,7 +70,7 @@ export const oramaOperations: OramaOperations = {
 				"OramaOperations: Error reloading OramaDB instance:",
 				error
 			);
-			new Notice(`Error reloading database: ${error.message}`);
+			new Notice(t("orama.reloadError", { error: error.message }));
 			return null;
 		}
 	},

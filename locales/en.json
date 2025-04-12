@@ -1,0 +1,145 @@
+{
+    "commands": {
+        "start-mcp-server": "Start Server",
+        "stop-mcp-server": "Stop Server",
+        "index-vault": "Re-index Vault",
+        "save-orama-db": "Save Vector Database Manually",
+        "saveDbNotRunning": "MCP Server is not running.",
+        "initDbSuccess": "Orama DB initialized",
+        "initDbError": "Error initializing Orama DB: {error}"
+    },
+    "notices": {
+        "serverRunning": "MCP Server is running.",
+        "serverStopped": "MCP Server stopped",
+        "serverAlreadyRunning": "MCP Server is already running.",
+        "serverAlreadyStopped": "MCP Server is already stopped.",
+        "serverStartFailed": "Failed to start MCP Server: {error}",
+        "serverStarted": "MCP Server started on port {port}",
+        "indexingError": "Error during indexing: {error}",
+        "serverNotRunning": "MCP Server is not running. Please start it first.",
+        "cannotSaveDb": "MCP Server is not running. Cannot save DB."
+    },
+    "ribbonTooltip": "MCP Server Status",
+    "serverStatus": {
+        "running": "MCP Server is running.",
+        "stopped": "MCP Server is stopped. Click Start command or enable autostart."
+    },
+    "settings": {
+        "port": {
+            "name": "Port",
+            "desc": "The port to use for the MCP server."
+        },
+        "autoStart": {
+            "name": "Auto Start MCP",
+            "desc": "Start the MCP server when Obsidian starts."
+        },
+        "mcpEndpoint": {
+            "name": "MCP Endpoint"
+        },
+        "embeddingModel": {
+            "heading": "Embedding Model",
+            "name": "Embedding Model",
+            "desc": "The embedding model to use."
+        },
+        "modelProviderUrl": {
+            "name": "Model Provider URL (OpenAI Compatible)",
+            "desc": "The base URL for the OpenAI compatible API endpoint."
+        },
+        "apiKey": {
+            "name": "API Key",
+            "desc": "The API key to use for the OpenAI compatible API endpoint."
+        },
+        "vectorStore": {
+            "heading": "Vector Store"
+        },
+        "excludeFiles": {
+            "name": "Files to exclude from indexing",
+            "desc": "Specify file patterns to exclude from search indexing (uses .gitignore syntax). Patterns match against full file paths."
+        },
+        "storedChunks": {
+            "name": "Stored Document Chunks",
+            "loading": "Loading count...",
+            "loaded": "Total chunks inserted: {count}",
+            "notRunning": "MCP Server not running or Vector DB not initialized.",
+            "errorLoading": "Error loading count."
+        },
+        "chunking": {
+            "heading": "Chunking"
+        },
+        "chunkSize": {
+            "name": "Chunk Size",
+            "desc": "The maximum size of each chunk."
+        },
+        "chunkOverlap": {
+            "name": "Chunk Overlap",
+            "desc": "The amount of overlap between chunks."
+        },
+        "separators": {
+            "name": "Separators",
+            "desc": "The separators to use when splitting text into chunks."
+        },
+        "dangerousZone": {
+            "heading": "Dangerous Zone"
+        },
+        "indexVault": {
+            "name": "Index Vault",
+            "desc": "Rebuild the vector store by re-indexing all files in the vault. WARNING: This operation is very time consuming and expensive."
+        },
+        "buttons": {
+            "copy": "Copy",
+            "verifyConnection": "Verify Connection",
+            "copyGitignore": "Copy from .gitignore",
+            "reindex": "Re-index Vault"
+        },
+        "notices": {
+            "invalidPort": "Invalid port number. Please enter a number between 1 and 65535.",
+            "endpointCopied": "API Endpoint copied to clipboard",
+            "connectionVerified": "Connection verified successfully!",
+            "connectionFailed": "Connection verification failed.",
+            "connectionError": "An error occurred during connection verification: {error}",
+            "gitignoreCopied": ".gitignore content copied to settings.",
+            "gitignoreReadError": "Could not read .gitignore file. Make sure it exists in the vault root.",
+            "chunkCountError": "Failed to get chunk count: {error}",
+            "invalidChunkSize": "Invalid chunk size. Please enter a positive number.",
+            "invalidChunkOverlap": "Invalid chunk overlap. Please enter a non-negative number.",
+            "invalidSeparatorsJson": "Invalid separators. Please enter a valid JSON array of strings.",
+            "invalidSeparatorsFormat": "Invalid separators. Please enter a valid JSON array. Error: {error}",
+            "reindexingStarted": "Re-indexing vault...",
+            "reindexingSuccess": "Vault re-indexed successfully.",
+            "reindexingError": "Error re-indexing vault: {error}",
+            "apiKeyRequired": "Please provide an API key.",
+            "connectionVerifyFailed": "Connection verification failed: {error}"
+        }
+    },
+    "indexing": {
+        "starting": "Starting vault indexing (clearing previous index)...",
+        "warningManualRestart": "Warning: Indexing complete, but server may need manual restart to use new index.",
+        "errorRemovingOldDb": "Error removing old database file: {error}. Indexing might be incomplete.",
+        "errorFetchingDimension": "Error fetching embedding dimension: {error}. Cannot create database.",
+        "errorCreatingDb": "Error creating new database: {error}. Indexing aborted.",
+        "progressStart": "Starting indexing 0% (0/{totalChunks} chunks)...",
+        "progressUpdate": "Indexing... {percentage}% ({processedChunks}/{totalChunks} chunks)",
+        "complete": "Indexing complete. Indexed {indexedCount} chunks. Database saved.",
+        "errorSavingDb": "Error saving database: {error}. Indexing complete, but data not saved.",
+        "errorDbInstanceInvalid": "Indexing finished, but database instance was invalid. Data not saved.",
+        "errorIndexing": "Error indexing vault: {error}. See console.",
+        "errorNotifyServer": "Failed to notify server to reload database. Restart might be needed."
+    },
+    "orama": {
+        "initFailedInstance": "Failed to initialize OramaDB instance.",
+        "initError": "Error initializing Orama database: {error}",
+        "reloadSuccess": "Database reloaded successfully.",
+        "reloadFailedInstance": "Failed to reload OramaDB instance after indexing.",
+        "reloadError": "Error reloading database: {error}",
+        "saveError": "Error saving Orama DB: {error}",
+        "loadCreateError": "Failed to load or create database: {error}",
+        "initFailedNotice": "Failed to initialize Orama DB: {error}"
+    },
+    "server": {
+        "loadDbError": "Failed to load OramaDB on startup: {error}",
+        "genericError": "MCP Server error: {error}",
+        "stopError": "Error stopping MCP server. See console for details.",
+        "manualSaveSuccess": "Orama DB saved manually.",
+        "manualSaveError": "Error saving Orama DB: {error}"
+    }
+}
