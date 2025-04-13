@@ -4,7 +4,7 @@ import { z } from "zod";
 import { App, Notice } from "obsidian";
 import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
-import { writeFileTool } from "./tools/write_files.js";
+import { createFileTool } from "./tools/create_files.js";
 import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js"; // Added import for edit_file
 import { oramaOperations } from "./utils/orama_operations.js";
 import { countEntries, closeDatabase } from "./orama-db.js";
@@ -277,7 +277,7 @@ export class MCPServer {
 		});
 
 		this.server.addTool({
-			name: "write_file",
+			name: "create_file",
 			description:
 				"Creates a new file with the specified content at the given path within your Obsidian Vault. Creates necessary sub-folders if they don't exist. This tool will fail if a file already exists at the specified `relative_path`. Ensure the path is correct and points to a non-existent file location.",
 			parameters: z.object({
@@ -293,8 +293,8 @@ export class MCPServer {
 				content: string;
 			}) => {
 				try {
-					// Assuming writeFileTool handles directory creation and overwriting
-					return await writeFileTool(
+					// Assuming createFileTool handles directory creation and overwriting
+					return await createFileTool(
 						this.app,
 						input.relative_path,
 						input.content

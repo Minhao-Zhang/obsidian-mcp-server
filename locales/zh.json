@@ -2,7 +2,7 @@
     "commands": {
         "start-mcp-server": "启动服务器",
         "stop-mcp-server": "停止服务器",
-        "index-vault": "重新索引库",
+        "index-vault": "重新索引仓库",
         "save-orama-db": "手动保存向量数据库",
         "saveDbNotRunning": "MCP服务器未运行。",
         "initDbSuccess": "Orama DB已初始化",
@@ -82,14 +82,14 @@
             "heading": "危险区域"
         },
         "indexVault": {
-            "name": "索引库",
-            "desc": "通过重新索引库中的所有文件来重建向量存储。警告：此操作非常耗时且昂贵。"
+            "name": "索引仓库",
+            "desc": "通过重新索引仓库中的所有文件来重建向量存储。警告：此操作非常耗时且昂贵。"
         },
         "buttons": {
             "copy": "复制",
             "verifyConnection": "验证连接",
             "copyGitignore": "从.gitignore复制",
-            "reindex": "重新索引库"
+            "reindex": "重新索引仓库"
         },
         "notices": {
             "invalidPort": "无效的端口号。请输入1到65535之间的数字。",
@@ -104,15 +104,15 @@
             "invalidChunkOverlap": "无效的块重叠。请输入一个非负数。",
             "invalidSeparatorsJson": "无效的分隔符。请输入一个有效的JSON字符串数组。",
             "invalidSeparatorsFormat": "无效的分隔符。请输入一个有效的JSON数组。错误：{error}",
-            "reindexingStarted": "正在重新索引库...",
-            "reindexingSuccess": "库已成功重新索引。",
-            "reindexingError": "重新索引库时出错：{error}",
+            "reindexingStarted": "正在重新索引仓库...",
+            "reindexingSuccess": "仓库已成功重新索引。",
+            "reindexingError": "重新索引仓库时出错：{error}",
             "apiKeyRequired": "请输入API密钥。",
             "connectionVerifyFailed": "连接验证失败：{error}"
         }
     },
     "indexing": {
-        "starting": "开始索引库（清除先前索引）...",
+        "starting": "开始索引仓库（清除先前索引）...",
         "warningManualRestart": "警告：索引完成，但服务器可能需要手动重启才能使用新索引。",
         "errorRemovingOldDb": "移除旧数据库文件时出错：{error}。索引可能不完整。",
         "errorFetchingDimension": "获取嵌入维度时出错：{error}。无法创建数据库。",
@@ -122,7 +122,7 @@
         "complete": "索引完成。已索引 {indexedCount} 个块。数据库已保存。",
         "errorSavingDb": "保存数据库时出错：{error}。索引完成，但数据未保存。",
         "errorDbInstanceInvalid": "索引完成，但数据库实例无效。数据未保存。",
-        "errorIndexing": "索引库时出错：{error}。请查看控制台。",
+        "errorIndexing": "索引仓库时出错：{error}。请查看控制台。",
         "errorNotifyServer": "通知服务器重新加载数据库失败。可能需要重启。"
     },
     "orama": {

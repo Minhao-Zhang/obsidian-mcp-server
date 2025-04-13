@@ -1,6 +1,6 @@
 import { App, normalizePath } from "obsidian";
 
-export async function writeFileTool(
+export async function createFileTool(
 	app: App,
 	relativePath: string,
 	content: string
