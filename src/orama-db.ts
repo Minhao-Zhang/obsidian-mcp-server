@@ -158,7 +158,8 @@ async function loadOrCreateDatabase(
 export async function getOramaDB(
 	app: App,
 	settings: any,
-	forceReload: boolean = false
+	forceReload: boolean = false,
+	t?: TFunction // Optional t function
 ): Promise<Orama<MySchema> | null> {
 	if (forceReload && db) {
 		stopOramaPersistence();
@@ -170,7 +171,13 @@ export async function getOramaDB(
 			db = await loadOrCreateDatabase(app, settings);
 		} catch (error) {
 			console.error("Failed to load or create database:", error);
-			new Notice(`Failed to initialize Orama DB: ${error.message}`);
+			if (t) {
+				new Notice(
+					t("orama.initFailedNotice", { error: error.message })
+				);
+			} else {
+				new Notice(`Failed to initialize Orama DB: ${error.message}`);
+			}
 			db = null;
 		}
 	}

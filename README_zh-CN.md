@@ -9,13 +9,6 @@
 ## 特性
 
 - **本地 MCP 服务器：** 在可配置的端口上运行一个基于 SSE 的 MCP 服务器。
-- **Vault 交互工具：** 通过 MCP 服务器公开以下工具：
-  - `simple_vector_search`：使用向量嵌入对您的 vault 中已索引的笔记执行语义搜索。需要完成 vault 索引。
-  - `count_entries`：报告向量存储中已索引的文档块的数量。
-  - `list_files`：列出您的 vault 中指定目录中的文件和文件夹。
-  - `read_file`：读取特定文件的内容（可选地带有行号）。
-  - `write_file`：在 vault 中创建一个新文件。
-  - `edit_file`：编辑现有文件中特定范围的行。
 - **用于语义搜索的 Vault 索引：**
   - 将您的 Markdown 笔记的内容索引到 Orama 向量数据库中。
   - 使用可配置的 OpenAI 兼容嵌入模型（例如，OpenAI，通过兼容端点的本地 Ollama 模型）来生成嵌入。
@@ -34,9 +27,19 @@
     - 嵌入提供商的连接验证。
   - **Ribbon 图标：** 在 Obsidian ribbon 中添加一个状态图标，指示 MCP 服务器是正在运行还是已停止。
 
+## MCP 工具
+
+- **Vault 交互工具：** 通过 MCP 服务器公开以下工具：
+  - `simple_vector_search`：使用向量嵌入对您的 vault 中已索引的笔记执行语义搜索。需要完成 vault 索引。
+  - `count_entries`：报告向量存储中已索引的文档块的数量。
+  - `list_files`：列出您的 vault 中指定目录中的文件和文件夹。
+  - `read_file`：读取特定文件的内容（可选地带有行号）。
+  - `create_file`：在 vault 中创建一个新文件。
+  - `edit_file`：编辑现有文件中特定范围的行。
+
 ## TODO
 
-- [ ] 多语言支持（从简体中文开始）
+- [x] 多语言支持（从简体中文开始）
 - [ ] 重命名一些工具以更准确地反映功能
 - [ ] 添加一个可以基于 Obsidian 模板生成笔记的工具
 - [ ] 实现使用元数据（frontmatter）进行过滤的搜索

@@ -4,11 +4,14 @@ import { z } from "zod";
 import { App, Notice } from "obsidian";
 import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
-import { writeFileTool } from "./tools/write_files.js";
+import { createFileTool } from "./tools/create_files.js";
 import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js"; // Added import for edit_file
 import { oramaOperations } from "./utils/orama_operations.js";
 import { countEntries, closeDatabase } from "./orama-db.js";
 import { vectorSearch } from "./tools/vector_search.js";
+
+// Define a type for the translation function signature
+type TFunction = (key: string, params?: Record<string, string>) => string;
 
 export class MCPServer {
 	private server: FastMCP;
@@ -18,10 +21,17 @@ export class MCPServer {
 	private settings: any; // Store settings
 	private isIndexing: boolean = false; // Flag to prevent concurrent indexing
 	private cleanupCallbacks: (() => void)[] = []; // For cleaning up timeouts/intervals
+	private t: TFunction; // Store translation function
 
-	constructor(private app: App, port: number, settings: any) {
+	constructor(
+		private app: App,
+		port: number,
+		settings: any,
+		t: TFunction // Receive translation function
+	) {
 		this.port = port;
 		this.settings = settings;
+		this.t = t; // Store translation function
 
 		if (!settings.apiKey) {
 			// Prevent server start if API key is essential
@@ -39,7 +49,7 @@ export class MCPServer {
 		// Load the DB initially when the server starts
 		this.initializeOramaDB().catch((error) => {
 			console.error("Failed initial OramaDB load:", error);
-			new Notice(`Failed to load OramaDB on startup: ${error.message}`);
+			new Notice(this.t("server.loadDbError", { error: error.message }));
 		});
 	}
 
@@ -47,7 +57,8 @@ export class MCPServer {
 	async initializeOramaDB() {
 		this.oramaDB = await oramaOperations.initializeOramaDB(
 			this.app,
-			this.settings
+			this.settings,
+			this.t.bind(this) // Pass t function
 		);
 		return this.oramaDB;
 	}
@@ -56,7 +67,8 @@ export class MCPServer {
 	async reloadOramaDBInstance() {
 		this.oramaDB = await oramaOperations.reloadOramaDBInstance(
 			this.app,
-			this.settings
+			this.settings,
+			this.t.bind(this) // Pass t function
 		);
 		return this.oramaDB;
 	}
@@ -84,7 +96,9 @@ export class MCPServer {
 				console.error("MCP Server error:", error);
 				// Don't show notice for timeout errors to avoid spamming user
 				if (error.code !== -32001) {
-					new Notice(`MCP Server error: ${error.message}`);
+					new Notice(
+						this.t("server.genericError", { error: error.message })
+					);
 				}
 			});
 
@@ -263,7 +277,7 @@ export class MCPServer {
 		});
 
 		this.server.addTool({
-			name: "write_file",
+			name: "create_file",
 			description:
 				"Creates a new file with the specified content at the given path within your Obsidian Vault. Creates necessary sub-folders if they don't exist. This tool will fail if a file already exists at the specified `relative_path`. Ensure the path is correct and points to a non-existent file location.",
 			parameters: z.object({
@@ -279,8 +293,8 @@ export class MCPServer {
 				content: string;
 			}) => {
 				try {
-					// Assuming writeFileTool handles directory creation and overwriting
-					return await writeFileTool(
+					// Assuming createFileTool handles directory creation and overwriting
+					return await createFileTool(
 						this.app,
 						input.relative_path,
 						input.content
@@ -338,17 +352,23 @@ export class MCPServer {
 			);
 		} catch (error) {
 			console.error("Error stopping MCP server:", error);
-			new Notice(`Error stopping MCP server. See console for details.`);
+			new Notice(this.t("server.stopError"));
 		}
 	}
 
 	async triggerSaveDb() {
 		try {
-			await oramaOperations.saveOramaDb(this.app, this.settings);
-			new Notice("Orama DB saved manually.");
+			await oramaOperations.saveOramaDb(
+				this.app,
+				this.settings,
+				this.t.bind(this)
+			);
+			new Notice(this.t("server.manualSaveSuccess"));
 		} catch (error: any) {
 			console.error("Error saving Orama DB:", error);
-			new Notice(`Error saving Orama DB: ${error.message}`);
+			new Notice(
+				this.t("server.manualSaveError", { error: error.message })
+			);
 		}
 	}
 }

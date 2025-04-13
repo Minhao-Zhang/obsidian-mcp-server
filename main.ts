@@ -1,4 +1,21 @@
-import { Notice, Plugin } from "obsidian";
+import { Notice, Plugin, getLanguage } from "obsidian";
+import type { App } from "obsidian";
+
+interface Translation {
+	commands: Record<string, string>;
+	notices: Record<string, string>;
+	ribbonTooltip: string;
+	serverStatus: {
+		running: string;
+		stopped: string;
+	};
+	[key: string]: any; // Index signature for dynamic access
+}
+
+interface Translations {
+	en: Translation;
+	zh?: Translation;
+}
 import { MCPServer } from "./src/mcp-server.js"; // Ensure MCPServer is imported
 import { saveOramaDbCommand } from "./src/commands/saveOramaDbCommand.js";
 // Import the command function itself
@@ -11,12 +28,71 @@ import {
 
 export default class ObsidianMCPServer extends Plugin {
 	settings: ObsidianMCPServerPluginSettings;
-	// Make mcpServer potentially public or add a getter if needed by settings tab directly
-	// but passing via callback is safer.
 	private mcpServer?: MCPServer;
+	private translations: Translations = { en: {} as Translation };
+	private currentLanguage = "en";
+
+	async loadTranslations() {
+		const lang = getLanguage() || "en";
+		this.currentLanguage = ["en", "zh"].includes(lang) ? lang : "en";
+
+		try {
+			const enTranslations: Translation = (
+				await import("./locales/en.json")
+			).default;
+			this.translations.en = enTranslations;
+
+			if (this.currentLanguage === "zh") {
+				const zhTranslations: Translation = (
+					await import("./locales/zh.json")
+				).default;
+				this.translations.zh = zhTranslations;
+			}
+		} catch (error) {
+			console.error("Failed to load translations:", error);
+		}
+	}
+
+	// Updated t function to handle nested keys (e.g., "commands.start-mcp-server")
+	t(key: string, params: Record<string, string> = {}): string {
+		const keys = key.split(".");
+
+		const findTranslation = (
+			langTranslations: Translation | undefined
+		): string | undefined => {
+			if (!langTranslations) return undefined;
+			let current: any = langTranslations;
+			for (const k of keys) {
+				if (current && typeof current === "object" && k in current) {
+					current = current[k];
+				} else {
+					return undefined; // Key path not found
+				}
+			}
+			return typeof current === "string" ? current : undefined; // Return only if the final value is a string
+		};
+
+		const lang = this.currentLanguage as keyof Translations;
+		let translation = findTranslation(this.translations[lang]);
+
+		// Fallback to English if translation not found in current language
+		if (translation === undefined && lang !== "en") {
+			translation = findTranslation(this.translations.en);
+		}
+
+		// Fallback to the key itself if not found in English either
+		translation = translation ?? key;
+
+		// Replace parameters
+		return Object.entries(params).reduce(
+			(str, [k, v]) => str.replace(`{${k}}`, v),
+			translation
+		);
+	}
 
 	async onload() {
 		await this.loadSettings();
+		await this.loadTranslations();
 
 		// Start MCP server if startOnStartup is enabled
 		if (this.settings.startOnStartup) {
@@ -26,12 +102,12 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to start MCP server
 		this.addCommand({
 			id: "start-mcp-server",
-			name: "Start Server",
+			name: this.t("commands.start-mcp-server"),
 			callback: () => {
 				if (!this.mcpServer) {
 					this.startMCPServer();
 				} else {
-					new Notice("MCP Server is already running.");
+					new Notice(this.t("notices.serverAlreadyRunning"));
 				}
 			},
 		});
@@ -39,7 +115,7 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to stop MCP server
 		this.addCommand({
 			id: "stop-mcp-server",
-			name: "Stop Server",
+			name: this.t("commands.stop-mcp-server"),
 			callback: () => {
 				this.stopMCPServer();
 			},
@@ -48,12 +124,10 @@ export default class ObsidianMCPServer extends Plugin {
 		// Command to trigger re-indexing
 		this.addCommand({
 			id: "index-vault", // New command ID
-			name: "Re-index Vault", // New command name
+			name: this.t("commands.index-vault"),
 			callback: () => {
 				if (!this.mcpServer) {
-					new Notice(
-						"MCP Server is not running. Please start it first."
-					);
+					new Notice(this.t("notices.serverNotRunning"));
 					return;
 				}
 				// Call the standalone command function, passing the plugin instance and the server instance
@@ -62,7 +136,11 @@ export default class ObsidianMCPServer extends Plugin {
 						"Error during index vault command execution:",
 						error
 					);
-					new Notice(`Error during indexing: ${error.message}`);
+					new Notice(
+						this.t("notices.indexingError", {
+							error: error.message,
+						})
+					);
 				});
 			},
 		});
@@ -77,10 +155,10 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add command to manually save Orama DB (might still be useful for debugging)
 		this.addCommand({
 			id: "save-orama-db",
-			name: "Save Vector Database Manually",
+			name: this.t("commands.save-orama-db"),
 			callback: () => {
 				if (!this.mcpServer) {
-					new Notice("MCP Server is not running. Cannot save DB.");
+					new Notice(this.t("notices.cannotSaveDb"));
 					return;
 				}
 				// Call the save function directly or a method on the server if preferred
@@ -91,16 +169,14 @@ export default class ObsidianMCPServer extends Plugin {
 		// Add ribbon icon (maybe make it indicate server status?)
 		const ribbonIconEl = this.addRibbonIcon(
 			"server", // Use a relevant icon
-			"MCP Server Status", // Tooltip
+			this.t("ribbonTooltip"),
 			(evt: MouseEvent) => {
 				// Show status on click
 				if (this.mcpServer) {
-					new Notice("MCP Server is running.");
+					new Notice(this.t("notices.serverRunning"));
 					// Optionally trigger status check or open settings
 				} else {
-					new Notice(
-						"MCP Server is stopped. Click Start command or enable autostart."
-					);
+					new Notice(this.t("serverStatus.stopped"));
 				}
 			}
 		);
@@ -115,9 +191,7 @@ export default class ObsidianMCPServer extends Plugin {
 				// Callback function for the re-index button in settings
 				() => {
 					if (!this.mcpServer) {
-						new Notice(
-							"MCP Server is not running. Please start it first."
-						);
+						new Notice(this.t("notices.serverNotRunning"));
 						return;
 					}
 					indexVaultCommand(this, this.mcpServer).catch((error) => {
@@ -125,7 +199,11 @@ export default class ObsidianMCPServer extends Plugin {
 							"Error during index vault command execution from settings:",
 							error
 						);
-						new Notice(`Error during indexing: ${error.message}`);
+						new Notice(
+							this.t("notices.indexingError", {
+								error: error.message,
+							})
+						);
 					});
 				}
 			)
@@ -153,7 +231,7 @@ export default class ObsidianMCPServer extends Plugin {
 	// Renamed for clarity, ensures only one server instance runs
 	private startMCPServer() {
 		if (this.mcpServer) {
-			new Notice("MCP Server is already running.");
+			new Notice(this.t("notices.serverAlreadyRunning"));
 			return;
 		}
 
@@ -161,13 +239,20 @@ export default class ObsidianMCPServer extends Plugin {
 			this.mcpServer = new MCPServer(
 				this.app,
 				this.settings.port,
-				this.settings
+				this.settings,
+				this.t.bind(this) // Pass the translation function
 			);
 			this.mcpServer.start(); // Start listening
-			new Notice(`MCP Server started on port ${this.settings.port}`);
+			new Notice(
+				this.t("notices.serverStarted", {
+					port: this.settings.port.toString(),
+				})
+			);
 		} catch (error) {
 			console.error("Failed to start MCP Server:", error);
-			new Notice(`Failed to start MCP Server: ${error.message}`);
+			new Notice(
+				this.t("notices.serverStartFailed", { error: error.message })
+			);
 			this.mcpServer = undefined; // Ensure it's undefined on failure
 		}
 	}
@@ -176,9 +261,9 @@ export default class ObsidianMCPServer extends Plugin {
 		if (this.mcpServer) {
 			this.mcpServer.stop(); // This should handle closing DB etc.
 			this.mcpServer = undefined;
-			new Notice("MCP Server stopped");
+			new Notice(this.t("notices.serverStopped"));
 		} else {
-			new Notice("MCP Server is already stopped."); // Optional notice
+			new Notice(this.t("notices.serverAlreadyStopped")); // Optional notice
 		}
 	}
 

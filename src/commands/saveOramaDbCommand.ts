@@ -8,7 +8,7 @@ export async function saveOramaDbCommand(
 ): Promise<void> {
 	// Use the passed serverInstance
 	if (!serverInstance) {
-		new Notice("MCP Server is not running.");
+		new Notice(plugin.t("commands.saveDbNotRunning"));
 		return;
 	}
 

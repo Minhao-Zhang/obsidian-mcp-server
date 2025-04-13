@@ -7,9 +7,7 @@ export async function initializeOramaDbCommand(
 	const mcpServerInstance = (plugin as any).mcpServer; // Access the potentially private mcpServer
 
 	if (!mcpServerInstance) {
-		new Notice(
-			"MCP Server is not running. Please start the MCP Server first."
-		);
+		new Notice(plugin.t("commands.saveDbNotRunning"));
 		return;
 	}
 
@@ -25,9 +23,9 @@ export async function initializeOramaDbCommand(
 	try {
 		// We expect initializeOramaDB to be part of the mcpServerInstance
 		await mcpServerInstance.initializeOramaDB();
-		new Notice("Orama DB initialized");
+		new Notice(plugin.t("commands.initDbSuccess"));
 	} catch (error: any) {
 		console.error("Error initializing Orama DB via command:", error);
-		new Notice(`Error initializing Orama DB: ${error.message}`);
+		new Notice(plugin.t("commands.initDbError", { error: error.message }));
 	}
 }

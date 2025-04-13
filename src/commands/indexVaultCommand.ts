@@ -23,7 +23,7 @@ export async function indexVaultCommand(
 ): Promise<void> {
 	const app = plugin.app;
 	const settings = plugin.settings;
-	new Notice("Starting vault indexing (clearing previous index)...");
+	new Notice(plugin.t("indexing.starting"));
 
 	// Check if server instance is provided (needed for reload notification)
 	if (!serverInstance) {
@@ -69,7 +69,9 @@ export async function indexVaultCommand(
 				removeError
 			);
 			new Notice(
-				`Error removing old database file: ${removeError.message}. Indexing might be incomplete.`
+				plugin.t("indexing.errorRemovingOldDb", {
+					error: removeError.message,
+				})
 			);
 		}
 
@@ -93,7 +95,9 @@ export async function indexVaultCommand(
 					embedError
 				);
 				new Notice(
-					`Error fetching embedding dimension: ${embedError.message}. Cannot create database.`
+					plugin.t("indexing.errorFetchingDimension", {
+						error: embedError.message,
+					})
 				);
 				return;
 			}
@@ -114,7 +118,9 @@ export async function indexVaultCommand(
 				createError
 			);
 			new Notice(
-				`Error creating new database: ${createError.message}. Indexing aborted.`
+				plugin.t("indexing.errorCreatingDb", {
+					error: createError.message,
+				})
 			);
 			return;
 		}
@@ -165,7 +171,9 @@ export async function indexVaultCommand(
 
 		const totalChunks = allChunks.length;
 		progressNotice = new Notice(
-			`Starting indexing 0% (0/${totalChunks} chunks)...`,
+			plugin.t("indexing.progressStart", {
+				totalChunks: totalChunks.toString(),
+			}),
 			0
 		); // 0 timeout = persistent
 
@@ -214,7 +222,11 @@ export async function indexVaultCommand(
 					: 100;
 			if (progressNotice) {
 				progressNotice.setMessage(
-					`Indexing... ${percentage}% (${processedChunks}/${totalChunks} chunks)`
+					plugin.t("indexing.progressUpdate", {
+						percentage: percentage.toString(),
+						processedChunks: processedChunks.toString(),
+						totalChunks: totalChunks.toString(),
+					})
 				);
 			}
 		}
@@ -231,7 +243,9 @@ export async function indexVaultCommand(
 				// Update notice on successful save
 				if (progressNotice) {
 					progressNotice.setMessage(
-						`Indexing complete. Indexed ${indexedCount} chunks. Database saved.`
+						plugin.t("indexing.complete", {
+							indexedCount: indexedCount.toString(),
+						})
 					);
 					// Hide after a short delay
 					setTimeout(() => progressNotice.hide(), 5000);
@@ -241,7 +255,9 @@ export async function indexVaultCommand(
 				// No need to specifically handle "File already exists" as writeBinary overwrites
 				if (progressNotice) {
 					progressNotice.setMessage(
-						`Error saving database: ${saveError.message}. Indexing complete, but data not saved.`
+						plugin.t("indexing.errorSavingDb", {
+							error: saveError.message,
+						})
 					);
 					// Hide after a delay
 					setTimeout(() => progressNotice.hide(), 10000);
@@ -255,7 +271,7 @@ export async function indexVaultCommand(
 			console.error("Database instance was null, cannot save.");
 			if (progressNotice) {
 				progressNotice.setMessage(
-					"Indexing finished, but database instance was invalid. Data not saved."
+					plugin.t("indexing.errorDbInstanceInvalid")
 				);
 				// Hide after a delay
 				setTimeout(() => progressNotice.hide(), 10000);
@@ -266,12 +282,16 @@ export async function indexVaultCommand(
 		// Ensure notice is updated/hidden in case of critical error
 		if (progressNotice) {
 			progressNotice.setMessage(
-				`Error indexing vault: ${error.message || error}. See console.`
+				plugin.t("indexing.errorIndexing", {
+					error: error.message || error,
+				})
 			);
 			setTimeout(() => progressNotice.hide(), 10000);
 		} else {
 			new Notice(
-				`Error indexing vault: ${error.message || error}. See console.`
+				plugin.t("indexing.errorIndexing", {
+					error: error.message || error,
+				})
 			);
 		}
 	} finally {
@@ -297,17 +317,14 @@ export async function indexVaultCommand(
 					"Error calling reloadOramaDBInstance on server:",
 					reloadError
 				);
-				new Notice(
-					"Failed to notify server to reload database. Restart might be needed."
-				);
+				new Notice(plugin.t("indexing.errorNotifyServer"));
 			}
 		} else {
 			console.warn(
 				"Cannot notify server instance to reload DB (instance not provided or method missing)."
 			);
-			new Notice(
-				"Warning: Indexing complete, but server may need manual restart to use new index."
-			);
+			// Show user-facing warning if server couldn't be notified
+			new Notice(plugin.t("indexing.warningManualRestart"));
 		}
 	}
 }

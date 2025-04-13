@@ -9,13 +9,6 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
 ## Features
 
 - **Local MCP Server:** Runs an SSE-based MCP server on a configurable port.
-- **Vault Interaction Tools:** Exposes the following tools via the MCP server:
-  - `simple_vector_search`: Performs semantic search across indexed notes in your vault using vector embeddings. Requires vault indexing to be completed.
-  - `count_entries`: Reports the number of indexed document chunks in the vector store.
-  - `list_files`: Lists files and folders within a specified directory in your vault.
-  - `read_file`: Reads the content of a specific file (optionally with line numbers).
-  - `write_file`: Creates a new file within the vault.
-  - `edit_file`: Edits a specific range of lines within an existing file.
 - **Vault Indexing for Semantic Search:**
   - Indexes the content of your Markdown notes into an Orama vector database.
   - Uses a configurable OpenAI-compatible embedding model (e.g., OpenAI, local Ollama models via compatible endpoints) to generate embeddings.
@@ -34,9 +27,19 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
     - Connection verification for the embedding provider.
   - **Ribbon Icon:** Adds a status icon to the Obsidian ribbon indicating whether the MCP server is running or stopped.
 
+## MCP Tools
+
+- **Vault Interaction Tools:** Exposes the following tools via the MCP server:
+  - `simple_vector_search`: Performs semantic search across indexed notes in your vault using vector embeddings. Requires vault indexing to be completed.
+  - `count_entries`: Reports the number of indexed document chunks in the vector store.
+  - `list_files`: Lists files and folders within a specified directory in your vault.
+  - `read_file`: Reads the content of a specific file (optionally with line numbers).
+  - `create_file`: Creates a new file within the vault.
+  - `edit_file`: Edits a specific range of lines within an existing file.
+
 ## TODO
 
-- [ ] Multi-language support (starting with Simplified Chinese)
+- [x] Multi-language support (starting with Simplified Chinese)
 - [ ] Rename some tools to reflect the functionality more accurately
 - [ ] Add a tool that can generate notes based on Obsidian templates
 - [ ] Implement search with filtering by metadata (frontmatter)

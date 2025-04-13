@@ -1,0 +1,145 @@
+{
+    "commands": {
+        "start-mcp-server": "启动服务器",
+        "stop-mcp-server": "停止服务器",
+        "index-vault": "重新索引仓库",
+        "save-orama-db": "手动保存向量数据库",
+        "saveDbNotRunning": "MCP服务器未运行。",
+        "initDbSuccess": "Orama DB已初始化",
+        "initDbError": "初始化Orama DB时出错：{error}"
+    },
+    "notices": {
+        "serverRunning": "MCP服务器正在运行",
+        "serverStopped": "MCP服务器已停止",
+        "serverAlreadyRunning": "MCP服务器已在运行",
+        "serverAlreadyStopped": "MCP服务器已停止",
+        "serverStartFailed": "启动MCP服务器失败: {error}",
+        "serverStarted": "MCP服务器已启动，端口: {port}",
+        "indexingError": "索引过程中出错: {error}",
+        "serverNotRunning": "MCP服务器未运行，请先启动",
+        "cannotSaveDb": "MCP服务器未运行，无法保存数据库"
+    },
+    "ribbonTooltip": "MCP服务器状态",
+    "serverStatus": {
+        "running": "MCP服务器正在运行",
+        "stopped": "MCP服务器已停止，点击启动命令或启用自动启动"
+    },
+    "settings": {
+        "port": {
+            "name": "端口",
+            "desc": "MCP服务器使用的端口。"
+        },
+        "autoStart": {
+            "name": "自动启动MCP",
+            "desc": "Obsidian启动时启动MCP服务器。"
+        },
+        "mcpEndpoint": {
+            "name": "MCP端点"
+        },
+        "embeddingModel": {
+            "heading": "嵌入模型",
+            "name": "嵌入模型",
+            "desc": "要使用的嵌入模型。"
+        },
+        "modelProviderUrl": {
+            "name": "模型提供商URL (OpenAI兼容)",
+            "desc": "OpenAI兼容API端点的基础URL。"
+        },
+        "apiKey": {
+            "name": "API密钥",
+            "desc": "用于OpenAI兼容API端点的API密钥。"
+        },
+        "vectorStore": {
+            "heading": "向量存储"
+        },
+        "excludeFiles": {
+            "name": "从索引中排除的文件",
+            "desc": "指定要从搜索索引中排除的文件模式（使用.gitignore语法）。模式匹配完整文件路径。"
+        },
+        "storedChunks": {
+            "name": "存储的文档块",
+            "loading": "正在加载数量...",
+            "loaded": "总共插入的块数：{count}",
+            "notRunning": "MCP服务器未运行或向量数据库未初始化。",
+            "errorLoading": "加载数量时出错。"
+        },
+        "chunking": {
+            "heading": "分块"
+        },
+        "chunkSize": {
+            "name": "块大小",
+            "desc": "每个块的最大大小。"
+        },
+        "chunkOverlap": {
+            "name": "块重叠",
+            "desc": "块之间的重叠量。"
+        },
+        "separators": {
+            "name": "分隔符",
+            "desc": "将文本分割成块时使用的分隔符。"
+        },
+        "dangerousZone": {
+            "heading": "危险区域"
+        },
+        "indexVault": {
+            "name": "索引仓库",
+            "desc": "通过重新索引仓库中的所有文件来重建向量存储。警告：此操作非常耗时且昂贵。"
+        },
+        "buttons": {
+            "copy": "复制",
+            "verifyConnection": "验证连接",
+            "copyGitignore": "从.gitignore复制",
+            "reindex": "重新索引仓库"
+        },
+        "notices": {
+            "invalidPort": "无效的端口号。请输入1到65535之间的数字。",
+            "endpointCopied": "API端点已复制到剪贴板",
+            "connectionVerified": "连接验证成功！",
+            "connectionFailed": "连接验证失败。",
+            "connectionError": "连接验证期间发生错误：{error}",
+            "gitignoreCopied": ".gitignore内容已复制到设置。",
+            "gitignoreReadError": "无法读取.gitignore文件。请确保它存在于库根目录中。",
+            "chunkCountError": "获取块计数失败：{error}",
+            "invalidChunkSize": "无效的块大小。请输入一个正数。",
+            "invalidChunkOverlap": "无效的块重叠。请输入一个非负数。",
+            "invalidSeparatorsJson": "无效的分隔符。请输入一个有效的JSON字符串数组。",
+            "invalidSeparatorsFormat": "无效的分隔符。请输入一个有效的JSON数组。错误：{error}",
+            "reindexingStarted": "正在重新索引仓库...",
+            "reindexingSuccess": "仓库已成功重新索引。",
+            "reindexingError": "重新索引仓库时出错：{error}",
+            "apiKeyRequired": "请输入API密钥。",
+            "connectionVerifyFailed": "连接验证失败：{error}"
+        }
+    },
+    "indexing": {
+        "starting": "开始索引仓库（清除先前索引）...",
+        "warningManualRestart": "警告：索引完成，但服务器可能需要手动重启才能使用新索引。",
+        "errorRemovingOldDb": "移除旧数据库文件时出错：{error}。索引可能不完整。",
+        "errorFetchingDimension": "获取嵌入维度时出错：{error}。无法创建数据库。",
+        "errorCreatingDb": "创建新数据库时出错：{error}。索引已中止。",
+        "progressStart": "开始索引 0% (0/{totalChunks} 块)...",
+        "progressUpdate": "正在索引... {percentage}% ({processedChunks}/{totalChunks} 块)",
+        "complete": "索引完成。已索引 {indexedCount} 个块。数据库已保存。",
+        "errorSavingDb": "保存数据库时出错：{error}。索引完成，但数据未保存。",
+        "errorDbInstanceInvalid": "索引完成，但数据库实例无效。数据未保存。",
+        "errorIndexing": "索引仓库时出错：{error}。请查看控制台。",
+        "errorNotifyServer": "通知服务器重新加载数据库失败。可能需要重启。"
+    },
+    "orama": {
+        "initFailedInstance": "初始化OramaDB实例失败。",
+        "initError": "初始化Orama数据库时出错：{error}",
+        "reloadSuccess": "数据库重新加载成功。",
+        "reloadFailedInstance": "索引后重新加载OramaDB实例失败。",
+        "reloadError": "重新加载数据库时出错：{error}",
+        "saveError": "保存Orama DB时出错：{error}",
+        "loadCreateError": "加载或创建数据库失败：{error}",
+        "initFailedNotice": "初始化Orama DB失败：{error}"
+    },
+    "server": {
+        "loadDbError": "启动时加载OramaDB失败：{error}",
+        "genericError": "MCP服务器错误：{error}",
+        "stopError": "停止MCP服务器时出错。请查看控制台。",
+        "manualSaveSuccess": "Orama DB已手动保存。",
+        "manualSaveError": "保存Orama DB时出错：{error}"
+    }
+}
