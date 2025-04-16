@@ -5,7 +5,10 @@ import { App, Notice } from "obsidian";
 import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
 import { createFileTool } from "./tools/create_files.js";
-import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js"; // Added import for edit_file
+import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js";
+import { deleteFileTool } from "./tools/delete_file.js";
+import { createFolderTool } from "./tools/create_folder.js"; // Added import for create_folder
+import { deleteFolderTool } from "./tools/delete_folder.js";
 import { oramaOperations } from "./utils/orama_operations.js";
 import { countEntries, closeDatabase } from "./orama-db.js";
 import { vectorSearch } from "./tools/vector_search.js";
@@ -111,9 +114,7 @@ export class MCPServer {
 			});
 		} catch (error) {
 			console.error("Error starting MCP server:", error);
-			new Notice(
-				`Error starting MCP server on port ${this.port}. See console for details.`
-			);
+			new Notice(this.t("server.startError", { port: this.port }));
 			throw error; // Re-throw to allow caller to handle
 		}
 	}
@@ -196,26 +197,6 @@ export class MCPServer {
 			},
 		});
 
-		// Add index vault command as a tool? Or keep as Obsidian command?
-		// Let's keep it as an Obsidian command triggered via main.ts for now.
-		// If needed as a tool:
-		/*
-        this.server.addTool({
-            name: "index_vault",
-            description: "Re-indexes the entire vault, clearing the previous index. Includes frontmatter.",
-            parameters: z.object({}),
-            execute: async () => {
-                try {
-                    await this.performIndexVault();
-                    return JSON.stringify({ message: "Vault indexing initiated." });
-                } catch (error: any) {
-                    console.error("Error initiating vault indexing:", error);
-					return JSON.stringify({ error: `Failed to initiate indexing: ${error.message}` });
-                }
-            }
-        });
-        */
-
 		this.server.addTool({
 			name: "list_files",
 			description:
@@ -225,11 +206,15 @@ export class MCPServer {
 					.string()
 					.describe(
 						"Relative path to the root of the Obsidian vault."
-					),
+					)
+					.default("."),
 			}),
-			execute: async (input: { relative_path: string }) => {
+			execute: async (input: { relative_path?: string }) => {
 				try {
-					return await listFilesTool(this.app, input.relative_path);
+					return await listFilesTool(
+						this.app,
+						input.relative_path || "."
+					);
 				} catch (error) {
 					console.error("Error listing files:", error);
 					return JSON.stringify({
@@ -279,7 +264,7 @@ export class MCPServer {
 		this.server.addTool({
 			name: "create_file",
 			description:
-				"Creates a new file with the specified content at the given path within your Obsidian Vault. Creates necessary sub-folders if they don't exist. This tool will fail if a file already exists at the specified `relative_path`. Ensure the path is correct and points to a non-existent file location.",
+				"Creates a new file with the specified content at the given path within your Obsidian Vault. This tool will fail if a file already exists at the specified `relative_path`. Ensure the path is correct and points to a non-existent file location.",
 			parameters: z.object({
 				relative_path: z
 					.string()
@@ -293,7 +278,6 @@ export class MCPServer {
 				content: string;
 			}) => {
 				try {
-					// Assuming createFileTool handles directory creation and overwriting
 					return await createFileTool(
 						this.app,
 						input.relative_path,
@@ -333,6 +317,96 @@ export class MCPServer {
 						error: `Failed to execute edit_file tool: ${
 							error.message || error
 						}`,
+					});
+				}
+			},
+		});
+
+		this.server.addTool({
+			name: "delete_file",
+			description:
+				"Deletes a file within your Obsidian Vault. Provide the `relative_path` from the vault root to the file you wish to delete. This tool permanently removes the specified file from your vault. Use with caution, as deleted files cannot be recovered unless you have a backup.",
+			parameters: z.object({
+				relative_path: z
+					.string()
+					.describe(
+						"Relative path to the file to the root of the Obsidian vault."
+					),
+			}),
+			execute: async (input: { relative_path: string }) => {
+				try {
+					return await deleteFileTool(this.app, input.relative_path);
+				} catch (error) {
+					console.error("Error deleting file:", error);
+					return JSON.stringify({
+						error: "Failed to delete file. See console for details.",
+					});
+				}
+			},
+		});
+
+		this.server.addTool({
+			name: "create_folder",
+			description:
+				"Creates a folder within your Obsidian Vault. Provide the `relative_path` from the vault root to the folder you wish to create. This tool creates a new folder at the specified path within your vault. If the folder already exists, this tool will return an error.",
+			parameters: z.object({
+				relative_path: z
+					.string()
+					.describe(
+						"Relative path to the folder to the root of the Obsidian vault."
+					),
+			}),
+			execute: async (input: { relative_path: string }) => {
+				try {
+					await createFolderTool(this.app, input.relative_path);
+					new Notice(
+						this.t("server.folderCreated", {
+							path: input.relative_path,
+						})
+					);
+					return JSON.stringify({
+						success: "Folder created successfully.",
+					});
+				} catch (error) {
+					console.error("Error creating folder:", error);
+					return JSON.stringify({
+						error: "Failed to create folder. See console for details.",
+					});
+				}
+			},
+		});
+
+		this.server.addTool({
+			name: "delete_folder",
+			description:
+				"Deletes a folder within your Obsidian Vault. Provide the `relative_path` from the vault root to the folder you wish to delete. Optionally, set `force` to true to delete the folder even if it is not empty. This tool permanently removes the specified folder and all its contents from your vault. Use with extreme caution, as deleted folders and files cannot be recovered unless you have a backup.",
+			parameters: z.object({
+				relative_path: z
+					.string()
+					.describe(
+						"Relative path to the folder to the root of the Obsidian vault."
+					),
+				force: z
+					.boolean()
+					.describe(
+						"Whether to force delete the folder even if it is not empty."
+					)
+					.default(false),
+			}),
+			execute: async (input: {
+				relative_path: string;
+				force: boolean;
+			}) => {
+				try {
+					return await deleteFolderTool(
+						this.app,
+						input.relative_path,
+						input.force
+					);
+				} catch (error) {
+					console.error("Error deleting folder:", error);
+					return JSON.stringify({
+						error: "Failed to delete folder. See console for details.",
 					});
 				}
 			},

@@ -1,5 +1,4 @@
 import { Notice, Plugin, getLanguage } from "obsidian";
-import type { App } from "obsidian";
 
 interface Translation {
 	commands: Record<string, string>;

@@ -140,6 +140,8 @@
         "genericError": "MCP Server error: {error}",
         "stopError": "Error stopping MCP server. See console for details.",
         "manualSaveSuccess": "Orama DB saved manually.",
-        "manualSaveError": "Error saving Orama DB: {error}"
+        "manualSaveError": "Error saving Orama DB: {error}",
+        "startError": "Error starting MCP server on port {port}. See console for details.",
+        "folderCreated": "Folder created: {path}"
     }
 }

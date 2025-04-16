@@ -140,6 +140,8 @@
         "genericError": "MCP服务器错误：{error}",
         "stopError": "停止MCP服务器时出错。请查看控制台。",
         "manualSaveSuccess": "Orama DB已手动保存。",
-        "manualSaveError": "保存Orama DB时出错：{error}"
+        "manualSaveError": "保存Orama DB时出错：{error}",
+        "startError": "启动MCP服务器时出错，端口: {port}。请查看控制台。",
+        "folderCreated": "文件夹已创建: {path}"
     }
 }
