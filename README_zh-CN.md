@@ -29,33 +29,23 @@
 
 ## MCP 工具
 
-- **Vault 交互工具：** 通过 MCP 服务器公开以下工具：
-  - `simple_vector_search`：使用向量嵌入对您的 vault 中已索引的笔记执行语义搜索。需要完成 vault 索引。
-  - `count_entries`：报告向量存储中已索引的文档块的数量。
-  - `list_files`：列出您的 vault 中指定目录中的文件和文件夹。
-  - `read_file`：读取特定文件的内容（可选地带有行号）。
-  - `create_file`：在 vault 中创建一个新文件。
-  - `edit_file`：编辑现有文件中特定范围的行。
+- `simple_vector_search`：使用向量嵌入对笔记进行语义搜索。
+- `count_entries`：计算 Orama 数据库中已索引的笔记和块的数量。
+- `list_files`：列出指定目录中的文件和文件夹。
+- `read_file`：读取特定文件的内容。
+- `create_file`：创建一个新文件。
+- `edit_file`：编辑现有文件中特定范围的行。
+- `delete_file`：删除一个文件。
+- `create_folder`：创建一个文件夹。
+- `delete_folder`：删除一个文件夹。
 
 ## TODO
 
 - [x] 多语言支持（从简体中文开始）
-- [ ] 重命名一些工具以更准确地反映功能
+- [x] 重命名一些工具以更准确地反映功能
 - [ ] 添加一个可以基于 Obsidian 模板生成笔记的工具
 - [ ] 实现使用元数据（frontmatter）进行过滤的搜索
 - [ ] 实现对新笔记和编辑的实时跟踪和更新
-
-## 配置
-
-在 Obsidian 中访问插件设置以配置：
-
-1. **服务器设置：** 端口号以及服务器是否应与 Obsidian 一起自动启动。
-2. **嵌入模型：** 为您选择的 OpenAI 兼容嵌入提供商提供 URL、模型名称和 API 密钥。使用提供的按钮验证连接。
-3. **向量存储：**
-    - 定义文件模式（如 `.gitignore`）以排除特定文件或文件夹的索引。您可以直接从 vault 的 `.gitignore` 文件中复制模式。
-    - 如果需要，调整分块参数（大小、重叠、分隔符），但默认值通常是合适的。
-
-## 用法
 
 1. **配置：** 通过 Obsidian 设置面板设置插件，特别是嵌入模型详细信息。
 2. **索引 Vault：** 从 Obsidian 命令面板运行“重新索引 Vault (MCP Server)”命令。这对于 `simple_vector_search` 工具的运行是必需的。等待索引过程完成（将出现通知）。

@@ -29,18 +29,20 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
 
 ## MCP Tools
 
-- **Vault Interaction Tools:** Exposes the following tools via the MCP server:
-  - `simple_vector_search`: Performs semantic search across indexed notes in your vault using vector embeddings. Requires vault indexing to be completed.
-  - `count_entries`: Reports the number of indexed document chunks in the vector store.
-  - `list_files`: Lists files and folders within a specified directory in your vault.
-  - `read_file`: Reads the content of a specific file (optionally with line numbers).
-  - `create_file`: Creates a new file within the vault.
-  - `edit_file`: Edits a specific range of lines within an existing file.
+- `simple_vector_search`: Semantic search for notes using vector embeddings.
+- `count_entries`: Counts indexed notes and chunks in the Orama database.
+- `list_files`: Lists files and folders within a specified directory.
+- `read_file`: Reads the content of a specific file.
+- `create_file`: Creates a new file.
+- `edit_file`: Edits a specific range of lines within an existing file.
+- `delete_file`: Deletes a file.
+- `create_folder`: Creates a folder.
+- `delete_folder`: Deletes a folder.
 
 ## TODO
 
 - [x] Multi-language support (starting with Simplified Chinese)
-- [ ] Rename some tools to reflect the functionality more accurately
+- [x] Rename some tools to reflect the functionality more accurately
 - [ ] Add a tool that can generate notes based on Obsidian templates
 - [ ] Implement search with filtering by metadata (frontmatter)
 - [ ] Implement live tracking and updating of new notes and edits

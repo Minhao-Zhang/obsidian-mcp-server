@@ -85,11 +85,25 @@
             "name": "索引仓库",
             "desc": "通过重新索引仓库中的所有文件来重建向量存储。警告：此操作非常耗时且昂贵。"
         },
+        "tools": {
+            "heading": "精细化MCP工具控制",
+            "simple_vector_search": "在您的Obsidian Vault笔记中搜索与您的查询语义相似的内容。",
+            "count_entries": "计算您的Obsidian Vault的Orama数据库中索引的笔记和块的数量。",
+            "list_files": "列出您的Obsidian Vault的指定目录中的文件和子文件夹。",
+            "read_file": "读取您的Obsidian Vault中特定笔记或文件的完整内容。",
+            "create_file": "在您的Obsidian Vault中的给定路径创建一个具有指定内容的新文件。",
+            "edit_file": "编辑您的Obsidian Vault中文件的特定行范围。",
+            "delete_file": "删除您的Obsidian Vault中的文件。",
+            "create_folder": "在您的Obsidian Vault中创建一个文件夹。",
+            "delete_folder": "删除您的Obsidian Vault中的文件夹。"
+        },
         "buttons": {
             "copy": "复制",
             "verifyConnection": "验证连接",
             "copyGitignore": "从.gitignore复制",
-            "reindex": "重新索引仓库"
+            "reindex": "重新索引仓库",
+            "restartMCPServer": "重启MCP服务器",
+            "restartHint": "要使更改生效，请重新启动MCP服务器:"
         },
         "notices": {
             "invalidPort": "无效的端口号。请输入1到65535之间的数字。",
@@ -123,7 +137,8 @@
         "errorSavingDb": "保存数据库时出错：{error}。索引完成，但数据未保存。",
         "errorDbInstanceInvalid": "索引完成，但数据库实例无效。数据未保存。",
         "errorIndexing": "索引仓库时出错：{error}。请查看控制台。",
-        "errorNotifyServer": "通知服务器重新加载数据库失败。可能需要重启。"
+        "errorNotifyServer": "通知服务器重新加载数据库失败。可能需要重启。",
+        "restartHint": "请记住在更改索引设置后重新启动MCP服务器。"
     },
     "orama": {
         "initFailedInstance": "初始化OramaDB实例失败。",

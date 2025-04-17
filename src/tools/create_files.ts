@@ -8,8 +8,8 @@ export async function createFileTool(
 ): Promise<string> {
 	try {
 		const pathParts = relativePath.split("/");
-		const filename = pathParts.pop();
-		let folderPath = pathParts.join("/");
+		pathParts.pop();
+		const folderPath = pathParts.join("/");
 
 		// Check if folderPath is empty
 		if (folderPath === "") {

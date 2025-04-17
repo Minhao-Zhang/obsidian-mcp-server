@@ -29,3 +29,13 @@
 .dangerous-zone .setting-item-control button:hover {
   background-color: var(--background-modifier-error-hover);
 }
+
+/* Default state for the collapsible section */
+.mcp-tools-section {
+  display: none; /* Hidden by default */
+}
+
+/* State when the section is expanded */
+.mcp-tools-section.is-expanded {
+  display: block; /* Show when expanded */
+}

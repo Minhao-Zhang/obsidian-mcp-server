@@ -1,6 +1,4 @@
-import { App, Notice, normalizePath } from "obsidian";
-
-type TFunction = (key: string, params?: Record<string, string>) => string;
+import { App } from "obsidian";
 
 export async function createFolderTool(
 	app: App,
