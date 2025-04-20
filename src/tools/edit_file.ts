@@ -1,4 +1,4 @@
-import { App, Notice, TFile, normalizePath } from "obsidian";
+import { App, TFile, normalizePath } from "obsidian";
 import { z } from "zod";
 
 // Define the schema for the tool's parameters using Zod

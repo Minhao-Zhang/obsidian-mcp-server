@@ -85,11 +85,25 @@
             "name": "Index Vault",
             "desc": "Rebuild the vector store by re-indexing all files in the vault. WARNING: This operation is very time consuming and expensive."
         },
+        "tools": {
+            "heading": "Fine-grained MCP Tool Control",
+            "simple_vector_search": "Searches your Obsidian Vault notes for content semantically similar to your query.",
+            "count_entries": "Counts the number of indexed notes and chunks in your Obsidian Vault's Orama database.",
+            "list_files": "Lists files and sub-folders within a specified directory of your Obsidian Vault.",
+            "read_file": "Reads the full content of a specific note or file within your Obsidian Vault.",
+            "create_file": "Creates a new file with the specified content at the given path within your Obsidian Vault.",
+            "edit_file": "Edits a specific range of lines within a file in your Obsidian Vault.",
+            "delete_file": "Deletes a file within your Obsidian Vault.",
+            "create_folder": "Creates a folder within your Obsidian Vault.",
+            "delete_folder": "Deletes a folder within your Obsidian Vault."
+        },
         "buttons": {
             "copy": "Copy",
             "verifyConnection": "Verify Connection",
             "copyGitignore": "Copy from .gitignore",
-            "reindex": "Re-index Vault"
+            "reindex": "Re-index Vault",
+            "restartMCPServer": "Restart MCP Server",
+            "restartHint": "For your changes to take effect, please restart MCP Server:"
         },
         "notices": {
             "invalidPort": "Invalid port number. Please enter a number between 1 and 65535.",
@@ -123,7 +137,8 @@
         "errorSavingDb": "Error saving database: {error}. Indexing complete, but data not saved.",
         "errorDbInstanceInvalid": "Indexing finished, but database instance was invalid. Data not saved.",
         "errorIndexing": "Error indexing vault: {error}. See console.",
-        "errorNotifyServer": "Failed to notify server to reload database. Restart might be needed."
+        "errorNotifyServer": "Failed to notify server to reload database. Restart might be needed.",
+        "restartHint": "Remember to restart the MCP server after making changes to indexing settings."
     },
     "orama": {
         "initFailedInstance": "Failed to initialize OramaDB instance.",
@@ -140,6 +155,8 @@
         "genericError": "MCP Server error: {error}",
         "stopError": "Error stopping MCP server. See console for details.",
         "manualSaveSuccess": "Orama DB saved manually.",
-        "manualSaveError": "Error saving Orama DB: {error}"
+        "manualSaveError": "Error saving Orama DB: {error}",
+        "startError": "Error starting MCP server on port {port}. See console for details.",
+        "folderCreated": "Folder created: {path}"
     }
 }

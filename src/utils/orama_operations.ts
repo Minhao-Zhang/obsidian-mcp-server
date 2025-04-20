@@ -28,7 +28,7 @@ export const oramaOperations: OramaOperations = {
 		try {
 			const oramaDB = await getOramaDB(app, settings, false, t);
 			if (oramaDB) {
-				const count = await countEntries(oramaDB);
+				await countEntries(oramaDB);
 				return oramaDB;
 			} else {
 				console.error(
@@ -55,7 +55,7 @@ export const oramaOperations: OramaOperations = {
 		try {
 			const oramaDB = await getOramaDB(app, settings, true, t);
 			if (oramaDB) {
-				const count = await countEntries(oramaDB);
+				await countEntries(oramaDB);
 				new Notice(t("orama.reloadSuccess"));
 				return oramaDB;
 			} else {

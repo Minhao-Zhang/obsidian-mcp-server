@@ -1,8 +1,7 @@
 // @ts-nocheck
-import { create, Orama, insert, count } from "@orama/orama";
+import { create, Orama, count } from "@orama/orama";
 import { persist, restore } from "@orama/plugin-data-persistence";
-import { App, TFile, Notice } from "obsidian";
-import { Buffer } from "buffer";
+import { App, Notice } from "obsidian";
 import { getTextEmbeddings } from "./utils/embeddings.js";
 
 export interface MySchema {
@@ -11,11 +10,6 @@ export interface MySchema {
 	metadata: string; // Changed from MetadataType to string
 	file_path: string;
 }
-
-// MetadataType interface is no longer needed for the schema definition
-// export interface MetadataType {
-// 	[key: string]: any;
-// }
 
 // Global variable for dimension, fetched once
 let embeddingDimension: number | null = null;
@@ -48,7 +42,6 @@ export function stopOramaPersistence() {
 
 export async function saveDatabase(app: App, filePath: string) {
 	if (isSaving) {
-		console.log("Save already in progress, skipping."); // Added log
 		return;
 	}
 	if (!db) {
@@ -59,7 +52,7 @@ export async function saveDatabase(app: App, filePath: string) {
 	}
 	isSaving = true;
 	try {
-		const currentCount = await count(db);
+		await count(db);
 
 		const persistedData = await persist(db, "json");
 		await app.vault.adapter.write(filePath, persistedData as string);
@@ -120,7 +113,6 @@ async function loadOrCreateDatabase(
 			);
 			loadedDb = null;
 		}
-	} else {
 	}
 
 	if (!loadedDb) {
