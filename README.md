@@ -26,6 +26,7 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
     - Chunking parameters.
     - Connection verification for the embedding provider.
   - **Ribbon Icon:** Adds a status icon to the Obsidian ribbon indicating whether the MCP server is running or stopped.
+  - **Internationalization:** Supports English and Chinese interface languages based on Obsidian's language setting.
 
 ## MCP Tools
 
@@ -41,8 +42,8 @@ This is a work-in-progress plugin, and while it is functional, it may have bugs 
 
 ## TODO
 
-- [x] Multi-language support (starting with Simplified Chinese)
-- [x] Rename some tools to reflect the functionality more accurately
+- [x] Multi-language support (English, Chinese)
+- [x] Provide basic file/folder manipulation tools (create, read, edit, delete)
 - [ ] Add a tool that can generate notes based on Obsidian templates
 - [ ] Implement search with filtering by metadata (frontmatter)
 - [ ] Implement live tracking and updating of new notes and edits
@@ -56,6 +57,7 @@ Access the plugin settings within Obsidian to configure:
 3. **Vector Store:**
     - Define file patterns (like `.gitignore`) to exclude specific files or folders from indexing. You can copy patterns directly from your vault's `.gitignore` file.
     - Adjust chunking parameters (size, overlap, separators) if needed, though default values are generally suitable.
+4. **MCP Tools:** Enable or disable *individual* tools (like `read_file`, `create_folder`, etc.) provided by the server via toggles in the settings. A server restart (using the button in the settings) is required for changes to take effect.
 
 ## Usage
 
@@ -77,10 +79,8 @@ This project uses TypeScript. Ensure you have Node.js and npm installed.
 4. Copy the `main.js`, `manifest.json`, and `styles.css` files into your Obsidian vault's `.obsidian/plugins/mcp-server/` directory.
 5. Reload Obsidian and enable the plugin.
 
-## Known Issue
+## Known Issue & Limitations
 
-If your vault contains a lot of notes, the indexing process would fail as the database cannot be saved to a single local file. This will happen if the `orama.json` file is larger than 512MB. There is no workaround for this yet. You can try to reduce the number of notes in your vault or use a different vector database that supports sharding (like Pinecone).
+1. **File Size Limit**: If your vault contains many notes, indexing may fail when the `orama.json` file exceeds 512MB. Currently there is no workaround except to reduce note/chunk count.
 
-## OramaDB Limitation
-
-OramaDB stores floating point numbers in raw string form. This can cause the database size to increase rapidly, especially when indexing large vaults with many numerical values. This is a known limitation of the current implementation.
+2. **Number Storage**: OramaDB stores floating point numbers as raw strings, which can rapidly increase database size.
