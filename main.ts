@@ -215,10 +215,12 @@ export default class ObsidianMCPServer extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
+		const loadedData = (await this.loadData()) ?? {};
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+		this.settings.tools = Object.assign(
 			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
+			DEFAULT_SETTINGS.tools,
+			loadedData.tools ?? {}
 		);
 	}
 

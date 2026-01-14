@@ -5,6 +5,7 @@ import { App, Notice } from "obsidian";
 import { listFilesTool } from "./tools/list_files.js";
 import { readFileTool } from "./tools/read_file.js";
 import { createFileTool } from "./tools/create_files.js";
+import { createLinkTool } from "./tools/create_link.js";
 import { editFileTool, editFileParametersSchema } from "./tools/edit_file.js";
 import { deleteFileTool } from "./tools/delete_file.js";
 import { createFolderTool } from "./tools/create_folder.js"; // Added import for create_folder
@@ -300,6 +301,69 @@ export class MCPServer {
 						console.error("Error writing file:", error);
 						return JSON.stringify({
 							error: "Failed to write file. See console for details.",
+						});
+					}
+				},
+			});
+		}
+
+		if (this.settings.tools.create_link) {
+			this.server.addTool({
+				name: "create_link",
+				description:
+					"Creates an Obsidian wikilink from one note to another (e.g., `[[Target]]`) to help build your knowledge graph. By default, this appends the link to the end of the source note and avoids duplicates. Optionally, set `bidirectional` to also add a backlink in the target note.",
+				parameters: z.object({
+					source_path: z
+						.string()
+						.describe(
+							"Relative path to the source note (the note that will receive the link)."
+						),
+					target_path: z
+						.string()
+						.describe(
+							"Relative path to the target note (the note being linked to)."
+						),
+					alias: z
+						.string()
+						.optional()
+						.describe(
+							"Optional alias text to display for the link (e.g., `[[Target|alias]]`)."
+						),
+					bidirectional: z
+						.boolean()
+						.optional()
+						.default(false)
+						.describe(
+							"Whether to also create a backlink from the target note to the source note."
+						),
+					create_target_if_missing: z
+						.boolean()
+						.optional()
+						.default(false)
+						.describe(
+							"Whether to create an empty target note if it does not exist."
+						),
+				}),
+				execute: async (input: {
+					source_path: string;
+					target_path: string;
+					alias?: string;
+					bidirectional?: boolean;
+					create_target_if_missing?: boolean;
+				}) => {
+					try {
+						return await createLinkTool(this.app, {
+							source_path: input.source_path,
+							target_path: input.target_path,
+							alias: input.alias,
+							bidirectional: input.bidirectional,
+							create_target_if_missing:
+								input.create_target_if_missing,
+						});
+					} catch (error) {
+						console.error("Error creating link:", error);
+						return JSON.stringify({
+							error: "Failed to create link. See console for details.",
 						});
 					}
 				},
