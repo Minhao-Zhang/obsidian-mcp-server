@@ -26,6 +26,7 @@ export interface ObsidianMCPServerPluginSettings {
 		list_files: boolean;
 		read_file: boolean;
 		create_file: boolean;
+		create_link: boolean;
 		edit_file: boolean;
 		delete_file: boolean;
 		create_folder: boolean;
@@ -56,6 +57,7 @@ export const DEFAULT_SETTINGS: ObsidianMCPServerPluginSettings = {
 		list_files: true,
 		read_file: true,
 		create_file: true,
+		create_link: true,
 		edit_file: true,
 		delete_file: true,
 		create_folder: true,
@@ -529,6 +531,18 @@ export class ObsidianMCPServerSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.tools.create_file)
 					.onChange(async (value) => {
 						this.plugin.settings.tools.create_file = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(mcpToolsSection)
+			.setName("create_link")
+			.setDesc(this.plugin.t("settings.tools.create_link"))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.tools.create_link)
+					.onChange(async (value) => {
+						this.plugin.settings.tools.create_link = value;
 						await this.plugin.saveSettings();
 					})
 			);
