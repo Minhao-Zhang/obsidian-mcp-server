@@ -92,6 +92,7 @@
             "list_files": "列出您的Obsidian Vault的指定目录中的文件和子文件夹。",
             "read_file": "读取您的Obsidian Vault中特定笔记或文件的完整内容。",
             "create_file": "在您的Obsidian Vault中的给定路径创建一个具有指定内容的新文件。",
+            "create_link": "在您的Obsidian Vault中的两个笔记之间创建一个Obsidian链接，以帮助构建知识图谱。",
             "edit_file": "编辑您的Obsidian Vault中文件的特定行范围。",
             "delete_file": "删除您的Obsidian Vault中的文件。",
             "create_folder": "在您的Obsidian Vault中创建一个文件夹。",

@@ -92,6 +92,7 @@
             "list_files": "Lists files and sub-folders within a specified directory of your Obsidian Vault.",
             "read_file": "Reads the full content of a specific note or file within your Obsidian Vault.",
             "create_file": "Creates a new file with the specified content at the given path within your Obsidian Vault.",
+            "create_link": "Creates an Obsidian wikilink between two notes to help build your knowledge graph.",
             "edit_file": "Edits a specific range of lines within a file in your Obsidian Vault.",
             "delete_file": "Deletes a file within your Obsidian Vault.",
             "create_folder": "Creates a folder within your Obsidian Vault.",
