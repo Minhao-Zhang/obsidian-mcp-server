@@ -4,8 +4,6 @@ English | [中文文档（机翻）](README_zh-CN.md)
 
 This Obsidian plugin runs a local MCP (Model Context Protocol) server, allowing external applications (like AI assistants, scripts, or other tools) to interact with your Obsidian vault through a standardized interface.
 
-This is a work-in-progress plugin, and while it is functional, it may have bugs or incomplete features. Please report any issues you encounter. I don't know TypeScript that well so there might be security and reliability issues. You can help by opening issues or pull requests on GitHub. I will try to respond to them as soon as possible.
-
 ## Features
 
 - **Local MCP Server:** Runs an SSE-based MCP server on a configurable port.
@@ -79,7 +77,18 @@ This project uses TypeScript. Ensure you have Node.js and npm installed.
 4. Copy the `main.js`, `manifest.json`, and `styles.css` files into your Obsidian vault's `.obsidian/plugins/mcp-server/` directory.
 5. Reload Obsidian and enable the plugin.
 
-## Known Issue & Limitations
+## Status & Limitations
+
+This is a work in progress. It is functional and in daily use, but expect rough edges.
+
+Treat the security posture as unreviewed. The server exposes read and write access to your
+vault over a local port, so run it only on a machine you trust, and keep the port bound to
+localhost. Indexing sends note content to whichever embedding endpoint you configure, which
+is a third party unless you point it at a local model.
+
+Issues and pull requests are welcome, and I try to respond quickly.
+
+### Known issues
 
 1. **File Size Limit**: If your vault contains many notes, indexing may fail when the `orama.json` file exceeds 512MB. Currently there is no workaround except to reduce note/chunk count.
 
